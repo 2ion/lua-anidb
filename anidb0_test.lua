@@ -34,4 +34,9 @@ else
 end
 --]]
 
-Db:auth("twoion", "shai9poo99202313")
+--Db:auth("twoion", "shai9poo99202313")
+Db:preauth("ldBIg")
+
+Db:deauth()
+
+

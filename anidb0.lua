@@ -10,6 +10,7 @@ require("pack") -- string.pack() and string.unpack()
 
 local Pkg = {
     error = {},
+    amask = {},
     session = {},
 
     quiet = false,
@@ -23,12 +24,20 @@ local Pkg = {
     string_encoding = "UTF-8"
 }
 
-local function enum(G, t)
-    local idx = 1
+local function enum(G, t, nullshift)
+    local idx = nullshift or 1
     G._vv = {}
     for _,v in ipairs(t) do
         G[v] = bit32.lshift(1, idx)
         G._vv[G[v]] = v
+        idx = idx + 1
+    end
+end
+
+local function enum_bytes(G, t, nullshift)
+    local idx = nullshift or 1
+    for _,v in ipairs(t) do
+        G[v] = bit32.lshift(1, idx)
         idx = idx + 1
     end
 end
@@ -152,6 +161,15 @@ function Pkg:connect()
     return 0
 end
 
+function Pkg:preauth(sessionkey)
+    if not self:is_connected() then
+        return self.error.NOT_CONNECTED
+    end
+    self.session.key = sessionkey
+    self.session.is_loggedin = true
+    return 0
+end
+
 function Pkg:auth(username, password)
     local errno = 0
 
@@ -159,11 +177,11 @@ function Pkg:auth(username, password)
         return self.error.TOO_FEW_ARGUMENTS
     end
 
-    if not self.session.connected then
+    if not self:is_connected() then
         return self.error.NOT_CONNECTED
     end
 
-    if self.session.logged_in then
+    if self:is_loggedin() then
         Pkg:deauth()
     end
 
@@ -184,7 +202,7 @@ function Pkg:auth(username, password)
     end
 
     if self.data.code == 200 or self.data.code == 201 then
-        self.session.key = self.data.headerfields[2]
+        self.session.key = self.data.headfields[2]
         self.session.logged_in = true
         return 0
     elseif self.data.code == 500 then
@@ -198,7 +216,7 @@ function Pkg:auth(username, password)
     end
 end
 
-function Pkg:disauth()
+function Pkg:deauth()
     if not self.session.connected or
         not self.session.logged_in then
         return self.error.NOTHING_TO_DO
@@ -223,7 +241,7 @@ function Pkg:disconnect()
     local errno = 0
 
     if self:is_loggedin() then
-        errno = bit32.bor(errno, self:disauth())
+        errno = bit32.bor(errno, self:deauth())
     end
 
     if self:is_connected() then
@@ -281,6 +299,28 @@ function Pkg:parse_response(data)
     return v
 end
 
+function Pkg:anime_by_name(name, mask)
+    if not self:is_authenticated() then
+        return self.error.NOT_AUTHENTICATED
+    end
+
+    local anime = {}
+    local errno = self:send("ANIME")
+end
+
+-- { 
+function Pkg:encode_amask(flags)
+    local mask = { 0, 0, 0, 0, 0, 0, 0 }
+    for _,flag in ipairs(flags) do
+        local b = flag.byte
+        mask[b] = bit32.bor(mask[b], flag.mask)
+    end
+    for i,_ in ipairs(mask) do
+        mask[i] = string.format("%02x", mask[i])
+    end
+    return table.concat(mask)
+end
+
 function Pkg:ping()
     if not self:is_connected() then
         return self.error.NOT_CONNECTED
@@ -308,11 +348,16 @@ function Pkg:errnotostring(errno)
     end
 end
 
--- ENUMs
+function Pkg:enable_logging(flag)
+    self.quiet = flag and false or true
+end
+
+-- .DATA
 
 enum(Pkg.error, {
     "SOCKET",
     "NOT_CONNECTED",
+    "NOT_AUTHENTICATED",
     "CONNECTION",
     "CONNECTION_TIMEOUT",
 
@@ -328,13 +373,98 @@ enum(Pkg.error, {
     "TOO_FEW_ARGUMENTS",
     "NOTHING_TO_DO",
     "UNKNOWN_RESPONSE"
-
 })
 
-function Pkg:testerror()
-    print(self.error.NOT_CONNECTED)
-    print(self.error.INVALID_RESPONSE)
-    print(self.error.TOO_FEW_ARGUMENTS)
+-- AMASK
+
+for b=1,7 do
+    Pkg.amask[b] = {}
 end
+
+enum_bytes(Pkg.amask[1], {
+    "CATEGORY_WEIGHT_LIST",
+    "CATEGORY_LIST",
+    "RELATED_AID_TYPE",
+    "RELATED_AID_LIST",
+    "TYPE",
+    "YEAR",
+    "DATEFLAGS",                
+    "AID"
+}, 0)
+
+enum_bytes(Pkg.amask[2], {
+    "RETIRED1", -- retired
+    "RETIRED2",
+    "NAME_SYNONYM_LIST",
+    "NAME_SHORTS_LIST",
+    "NAME_OTHER",
+    "NAME_ENGLISH",
+    "NAME_KANJI",
+    "NAME_ROMAJI",
+}, 0)
+
+enum_bytes(Pkg.amask[3], {
+    "CATEGORY_ID_LIST",
+    "PICNAME",
+    "URL",
+    "END_DATE",
+    "AIR_DATE",
+    "SPECIAL_EP_COUNT",
+    "HIGHEST_EP_NUMBER",
+    "EPISODES"
+}, 0)
+
+enum_bytes(Pkg.amask[4], {
+    "18PLUS",
+    "AWARD_LIST",
+    "REVIEW_COUNT",
+    "AVERAGE_REVIEW_RATING",
+    "TEMP_VOTE_COUNT",
+    "TEMP_RATING",
+    "VOTE_COUNT",
+    "RATING"
+}, 0)
+
+enum(Pkg.amask[5], {
+    "DATE_RECORD_UPDATED",
+    "UNUSED1",
+    "UNUSED2",
+    "UNUSED3",
+    "ANIME_NFO_ID",
+    "ALLCINEMA_ID",
+    "ANN_ID",
+    "ANIMEPLANET_ID"
+}, 0)
+
+enum_bytes(Pkg.amask[6], {
+    "UNUSED1",
+    "UNUSED2",
+    "UNUSED3",
+    "UNUSED4",
+    "MAIN_CREATOR_NAME_LIST",
+    "MAIN_CREATOR_ID_LIST",
+    "CREATOR_ID_LIST",
+    "CREATOR",
+    "CHARACTER_ID_LIST"
+}, 0)
+
+enum_bytes(Pkg.amask[7], {
+    "UNUSED1",
+    "UNUSED2",
+    "UNUSED3",
+    "PARODY_COUNT",
+    "TRAILER_COUNT",
+    "OTHER_COUNT",
+    "CREDITS_COUNT",
+    "SPECIALS_COUNT"
+}, 0)
+
+for byteidx,byte in ipairs(Pkg.amask) do
+    for option,bitmask in pairs(byte) do
+        Pkg.amask[option] = { byte = byteidx, mask = bitmask }
+    end
+end
+
+-- print( Pkg:encode_amask{ Pkg.amask.AID, Pkg.amask.YEAR, Pkg.amask.TYPE, Pkg.amask.CATEGORY_LIST })
 
 return Pkg
