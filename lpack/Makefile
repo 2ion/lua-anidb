@@ -17,7 +17,7 @@ T= $(MYNAME).so
 OBJS= $(MYLIB).o
 TEST= test.lua
 
-all:	test
+all:	$T	
 
 test:	$T
 	$(LUABIN)/lua $(TEST)
