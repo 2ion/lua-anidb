@@ -1,7 +1,9 @@
 #!/usr/bin/env lua5.2
 
--- anidb client library for Lua
+-- anidb client library
 -- Copyright (C) 2013 Jens Oliver John
+-- Licensed under the GNU General Public License v3 or later.
+-- See the file LICENSE for details.
 
 local Socket = require("socket")
 local Stringx = require("pl.stringx")
