@@ -321,7 +321,7 @@ function Pkg:anime_by_name(name, amask)
         end
     else
 --        for i=1,#self.data.tailfields do
---        FIXME
+--        FIXME: handle default amask
     end
 
     return 0, anime
@@ -486,7 +486,9 @@ enum(Pkg.error, {
 
     "TOO_FEW_ARGUMENTS",
     "NOTHING_TO_DO",
-    "UNKNOWN_RESPONSE"
+    "UNKNOWN_RESPONSE",
+    "INVALID_HEXSTRING",
+    "NO_SUCH_ANIME"
 })
 
 -- AMASK
