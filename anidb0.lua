@@ -368,6 +368,10 @@ function Pkg:encode_amask(flags)
     return table.concat(mask)
 end
 
+--- decode the hexstring form of an amask to an array of flags as
+-- accepted by anime_by_name() and anime_by_id()
+-- @param hexstring an encoded amask
+-- @return an array of flags
 function Pkg:decode_amask(hexstring)
     local hexstring = hexstring
     local mask = {}
