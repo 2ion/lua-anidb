@@ -291,24 +291,71 @@ function Pkg:parse_response(data)
     if #v.lines == 2 then
         v.tailfields = Stringx.split(v.lines[2], '|')
     end
-
-    for i,j in pairs(v) do
-        print(i, j, type(j))
-    end
     
     return v
 end
 
-function Pkg:anime_by_name(name, mask)
+function Pkg:anime_by_name(name, amask)
     if not self:is_authenticated() then
         return self.error.NOT_AUTHENTICATED
     end
 
     local anime = {}
-    local errno = self:send("ANIME")
+
+    local errno = self:send("ANIME", {
+        aname = name,
+        amask = amask and self:encode_amask(amask) or nil
+    })
+
+    if errno ~= 0 then
+        return errno
+    end
+
+    if self.data.code == 330 then
+        return self.error.NO_SUCH_ANIME, nil
+    end
+
+    if amask then
+        for i=1,#amask do
+            anime[amask[i].fieldname] = self.data.tailfields[i]
+        end
+    else
+--        for i=1,#self.data.tailfields do
+--        FIXME
+    end
+
+    return 0, anime
 end
 
--- { 
+function Pkg:anime_by_aid(aid, amask)
+    if not self:is_authenticated() then
+        return self.error.NOT_AUTHENTICATED
+    end
+
+    local anime = {}
+
+    local errno = self:send("ANIME", {
+        aid = tostring(aid),
+        amask = amask and self:encode_amask(amask) or nil
+    })
+
+    if errno ~= 0 then
+        return errno
+    end
+
+    if.self.data.code == 330 then
+        return self.error.NO_SUCH_ANIME, nil
+    end
+
+    if amask then
+        for i=1,#amask do
+            anime[amask[i].fieldname] = self.data.tailfields[i]
+        end
+    end
+
+    return 0, anime
+end
+
 function Pkg:encode_amask(flags)
     local mask = { 0, 0, 0, 0, 0, 0, 0 }
     for _,flag in ipairs(flags) do
@@ -319,6 +366,69 @@ function Pkg:encode_amask(flags)
         mask[i] = string.format("%02x", mask[i])
     end
     return table.concat(mask)
+end
+
+function Pkg:decode_amask(hexstring)
+    local hexstring = hexstring
+    local mask = {}
+    local flags = { {}, {}, {}, {}, {}, {}, {} }
+    local amask = {}
+
+    -- don't accept incomplete bytes
+    if (#hexstring % 2) == 1 then
+        return self.error.INVALID_HEXSTRING
+    end
+
+    -- pad zeros for missing bytes
+    for i=1,(14-#hexstring)/2 do
+        hexstring = hexstring .. "00"
+    end
+
+    for byte in hexstring:gmatch("..") do
+        table.insert(mask, tonumber(byte, 16))
+    end
+
+    local function sort_and_insert(v, t)
+        local vmask = v.mask
+        if #t == 0 then
+            table.insert(t, v)
+            return
+        end
+--[[ inverse version
+        for i=#t,1,-1 do
+            if t[i].mask < vmask then
+                table.insert(t, i+1, v)
+                return
+            end
+        end
+--]]
+        for i=1,#t do
+            if i == #t then
+                table.insert(t, v)
+                return
+            end
+            if t[i].mask < vmask then
+                table.insert(t, i, v)
+                return
+            end
+        end
+    end
+
+    for i,byte in ipairs(mask) do
+        for flag,bytemask in pairs(self.amask[i]) do
+            if bit32.band(byte, bytemask) == bytemask then
+                sort_and_insert(flags[i], self.amask[flag])
+            end
+        end
+    end
+
+    for _,t in ipairs(flags) do
+        for __, flag in ipairs(t) do
+            table.insert(amask, flag)
+        end
+    end
+
+    return amask
 end
 
 function Pkg:ping()
@@ -461,7 +571,7 @@ enum_bytes(Pkg.amask[7], {
 
 for byteidx,byte in ipairs(Pkg.amask) do
     for option,bitmask in pairs(byte) do
-        Pkg.amask[option] = { byte = byteidx, mask = bitmask }
+        Pkg.amask[option] = { byte = byteidx, mask = bitmask, fieldname = tostring(option) }
     end
 end
 
