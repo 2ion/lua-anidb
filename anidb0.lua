@@ -21,7 +21,8 @@ local Pkg = {
     port = 9000,
     timeout = 15,
     retries = 1,
-    string_encoding = "UTF-8"
+    string_encoding = "UTF-8",
+    default_amask = "b2f0e0fc000000"
 }
 
 local function enum(G, t, nullshift)
@@ -309,10 +310,11 @@ function Pkg:anime_by_name(name, amask)
     end
 
     local anime = {}
+    local amask = amask or self:decode_amask(self.default_amask)
 
     local errno = self:send("ANIME", {
         aname = name,
-        amask = amask and self:encode_amask(amask) or nil
+        amask = self:encode_amask(amask)
     })
 
     if errno ~= 0 then
@@ -323,13 +325,8 @@ function Pkg:anime_by_name(name, amask)
         return self.error.NO_SUCH_ANIME, nil
     end
 
-    if amask then
-        for i=1,#amask do
-            anime[amask[i].fieldname] = self.data.tailfields[i]
-        end
-    else
---        for i=1,#self.data.tailfields do
---        FIXME: handle default amask
+    for i=1,#amask do
+        anime[amask[i].fieldname] = self.data.tailfields[i]
     end
 
     return 0, anime
@@ -341,10 +338,11 @@ function Pkg:anime_by_aid(aid, amask)
     end
 
     local anime = {}
+    local amask = amask or self:decode_amask(self.default_amask)
 
     local errno = self:send("ANIME", {
-        aid = tostring(aid),
-        amask = amask and self:encode_amask(amask) or nil
+        aid = aid,
+        amask = self:encode_amask(amask)
     })
 
     if errno ~= 0 then
@@ -355,10 +353,8 @@ function Pkg:anime_by_aid(aid, amask)
         return self.error.NO_SUCH_ANIME, nil
     end
 
-    if amask then
-        for i=1,#amask do
-            anime[amask[i].fieldname] = self.data.tailfields[i]
-        end
+    for i=1,#amask do
+        anime[amask[i].fieldname] = self.data.tailfields[i]
     end
 
     return 0, anime
