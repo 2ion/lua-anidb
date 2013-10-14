@@ -150,6 +150,7 @@ function Pkg:connect()
 
     self.sock:settimeout(self.timeout)
 
+-- FIXME: not necessary, the OS does this
 --    errno, errmsg = self.sock:setsockname("*", 0)
 --    if errno then
 --        return self.error.SOCKET, errmsg
@@ -323,6 +324,8 @@ function Pkg:anime_by_name(name, amask)
 
     if self.data.code == 330 then
         return self.error.NO_SUCH_ANIME, nil
+    elseif self.data.code ~= 230 then
+        return self.error.UNKNOWN_RESPONSE
     end
 
     for i=1,#amask do
@@ -350,7 +353,9 @@ function Pkg:anime_by_aid(aid, amask)
     end
 
     if self.data.code == 330 then
-        return self.error.NO_SUCH_ANIME, nil
+        return self.error.NO_SUCH_ANIME
+    elseif self.data.code ~= 230 then
+        return self.error.UNKNOWN_RESPONSE
     end
 
     for i=1,#amask do
@@ -358,6 +363,49 @@ function Pkg:anime_by_aid(aid, amask)
     end
 
     return 0, anime
+end
+
+function Pkg:anime_description(aid)
+    if not self:is_authenticated() then
+        return self.error.NOT_AUTHENTICATED
+    end
+
+    local description = ""
+    local aid = aid
+    local part = 0
+
+    local errno = self:send("ANIMEDESC", {
+        aid = aid,
+        part = part
+    })
+
+    if errno ~= 0 then
+        return errno
+    end
+
+    if self.data.code == 330 then
+        return self.error.NO_SUCH_ANIME
+    elseif self.data.code == 333 then
+        return self.error.NO_SUCH_DESCRIPTION
+    elseif self.data.code ~= 233 then
+        return self.error.UNKNOWN_RESPONSE
+    end
+
+    description = description .. self.data.tailfields[3]
+
+    if tonumber(self.data.tailfields[2]) > 0 then
+        for part=1,tonumber(self.data.tailfields[2]) do
+            errno = self:send("ANIMEDESC", {
+                aid = aid,
+                part = part
+            })
+            if errno ~= 0 then
+                description = description .. self.data.tailfields[3]
+            end
+        end
+    end
+
+    return 0, description
 end
 
 function Pkg:encode_amask(flags)
@@ -474,7 +522,8 @@ enum(Pkg.error, {
     "NOTHING_TO_DO",
     "UNKNOWN_RESPONSE",
     "INVALID_HEXSTRING",
-    "NO_SUCH_ANIME"
+    "NO_SUCH_ANIME",
+    "NO_SUCH_DESCRIPTION"
 })
 
 -- AMASK
