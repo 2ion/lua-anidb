@@ -42,6 +42,14 @@ local function enum_bytes(G, t, nullshift)
     end
 end
 
+local function reverse_list(l)
+    local results = {}
+    for i=#l, 1, -1 do
+    	results[#results+1] = l[i];
+    end
+    return results
+end
+
 local function onein(x, ...)
     for n, arg in ipairs{...} do
         if x == arg then
@@ -343,7 +351,7 @@ function Pkg:anime_by_aid(aid, amask)
         return errno
     end
 
-    if.self.data.code == 330 then
+    if self.data.code == 330 then
         return self.error.NO_SUCH_ANIME, nil
     end
 
@@ -392,41 +400,23 @@ function Pkg:decode_amask(hexstring)
         table.insert(mask, tonumber(byte, 16))
     end
 
-    local function sort_and_insert(v, t)
-        local vmask = v.mask
-        if #t == 0 then
-            table.insert(t, v)
-            return
-        end
---[[ inverse version
-        for i=#t,1,-1 do
-            if t[i].mask < vmask then
-                table.insert(t, i+1, v)
-                return
-            end
-        end
---]]
-        for i=1,#t do
-            if i == #t then
-                table.insert(t, v)
-                return
-            end
-            if t[i].mask < vmask then
-                table.insert(t, i, v)
-                return
-            end
-        end
-    end
-
     for i,byte in ipairs(mask) do
-        for flag,bytemask in pairs(self.amask[i]) do
-            if bit32.band(byte, bytemask) == bytemask then
-                sort_and_insert(flags[i], self.amask[flag])
+        for flag,flagmask in pairs(self.amask[i]) do
+            if bit32.band(byte, flagmask) == flagmask then
+                table.insert(flags[i], self.amask[flag])
             end
         end
     end
 
     for _,t in ipairs(flags) do
+        -- sort for correct bit order => correct value order
+        table.sort(t, function (a,b)
+            if a.mask > b.mask then
+                return true
+            else
+                return false
+            end
+        end)
         for __, flag in ipairs(t) do
             table.insert(amask, flag)
         end
@@ -541,7 +531,7 @@ enum_bytes(Pkg.amask[4], {
     "RATING"
 }, 0)
 
-enum(Pkg.amask[5], {
+enum_bytes(Pkg.amask[5], {
     "DATE_RECORD_UPDATED",
     "UNUSED1",
     "UNUSED2",
@@ -580,7 +570,5 @@ for byteidx,byte in ipairs(Pkg.amask) do
         Pkg.amask[option] = { byte = byteidx, mask = bitmask, fieldname = tostring(option) }
     end
 end
-
--- print( Pkg:encode_amask{ Pkg.amask.AID, Pkg.amask.YEAR, Pkg.amask.TYPE, Pkg.amask.CATEGORY_LIST })
 
 return Pkg
