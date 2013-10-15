@@ -133,6 +133,13 @@ function Pkg:querystring(t)
     return str
 end
 
+--- Sends a command to the server, handles general error codes and
+-- retrieves and parses the data, storing it in Pkg.data.
+-- @param cmd string API command
+-- @param args kv-table to be passed to querystring()
+-- @see querystring()
+-- @see parse_response()
+-- @return 0 in case of success, Pkg.error.* in case of an error.
 function Pkg:send(cmd, args)
     if not self.sock then
         return self.error.NOT_CONNECTED
