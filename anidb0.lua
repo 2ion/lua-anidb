@@ -123,7 +123,11 @@ function Pkg:querystring(t)
     end
 
     if self.session.logged_in then
-        str = str .. string.format("&s=%s", self.session.key)
+        if #t == 0 then
+            str = str .. string.format("s=%s", self.session.key)
+        else
+            str = str .. string.format("&s=%s", self.session.key)
+        end
     end
 
     return str
