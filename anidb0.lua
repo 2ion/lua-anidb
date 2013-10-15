@@ -27,6 +27,13 @@ local Pkg = {
     default_amask = "b2f0e0fc000000"
 }
 
+--- Enumerate the values in an environment, and assign them
+-- values 2^x so that they can be used as bitmasks. Creates a subtable
+-- _vv in G with the reversed mapping (enum_value -> key)
+-- @param G table, environment
+-- @param t table, array of strings
+-- @param nullshift the power of x to begin the enumeration with
+-- (defaults to 1)
 local function enum(G, t, nullshift)
     local idx = nullshift or 1
     G._vv = {}
@@ -37,6 +44,13 @@ local function enum(G, t, nullshift)
     end
 end
 
+--- Like enum(), but doesn't generate the G._vv
+-- @see enum
+-- @param G table, environment
+-- @param t table, array of strings
+-- @param nullshift the power of x to begin the enumeration with
+-- (defaults to 1)
+
 local function enum_bytes(G, t, nullshift)
     local idx = nullshift or 1
     for _,v in ipairs(t) do
@@ -45,6 +59,9 @@ local function enum_bytes(G, t, nullshift)
     end
 end
 
+--- Reverse an array
+-- @param l list
+-- @return reversed list
 local function reverse_list(l)
     local results = {}
     for i=#l, 1, -1 do
@@ -53,6 +70,10 @@ local function reverse_list(l)
     return results
 end
 
+--- Check if the value x is equal to a value among the vargs
+-- @param x value
+-- @param ... vargs
+-- @return true if there is a matching value, false if not
 local function onein(x, ...)
     for n, arg in ipairs{...} do
         if x == arg then
@@ -62,18 +83,27 @@ local function onein(x, ...)
     return false
 end
 
+--- Create a new instance of the library
+-- @return library object
 function Pkg:new()
     local o = {}
     setmetatable(o, { __index = self })
     return o
 end
 
+--- Log to stderr if logging is enabled
+-- @param t table in printf() format ("<format string>", ...)
+-- @see enable_logging()
 function Pkg:log(t)
     if not self.quiet then
         io.stderr:write(string.format(table.unpack(t)).."\n")
     end
 end
 
+--- Construct a querystring from the arguments passed in t. Appends the
+-- session key &s=$sessionkey
+-- @param t table of kv-pairs
+-- @return query string in the form a=b&c=d and so on
 function Pkg:querystring(t)
     local str = ""
 
