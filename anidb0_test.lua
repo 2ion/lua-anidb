@@ -3,40 +3,31 @@
 local Socket = require("socket")
 local Stringx = require("pl.stringx")
 local List = require("pl.List")
-require("pack") -- string.pack() and string.unpack()
+local Getopt = require("getopt")
 
-local function log(t)
-    print(string.format(table.unpack(t)))
+local USERNAME, PASSWORD, REMAIN_LOGGEDIN
+
+local function usage()
+    print([[anidb0_test [option]
+-u username
+-p password
+-r remain logged in
+
+-a anime-title  query anime by title
+-A aid          query anime by aid
+-D aid          query anime description by aid]])
 end
 
+local function go_assign(t, n, v) v = t[n] end
+local function mka(n, v) return function (t) go_assign(t, n, v) end end
 
-local Adb = require("anidb0")
-if Adb then log{" == Library loaded"} end
+local noop = Getopt{
+    { a={"u","username"}, g=1, f=mka(1, USERNAME)  },
+    { a={"p","password"}, g=1, f=mka(1, PASSWORD)  }
+}
 
-local Db = Adb:new()
-if Db then log{" == Library instance created"} end
+print(USERNAME, PASSWORD)
 
-local errno, errmsg = Db:connect()
-if errno == 0 then
-    log{" == Connection established"}
-else
-    log{" !! Could not connect to the server"}
-    return -1
-end
 
---[[
-errno = Db:ping()
-if errno == 0 then
-    log{" == Server responded to PING: %s", Db.data.lines[1]}
-else
-    log{" !! Didn't get a PONG: %s", Db:errnotostring(errno)}
-    log{"%s", tostring(Db.data.lines)}
-end
---]]
-
---Db:auth("twoion", "shai9poo99202313")
-Db:preauth("ldBIg")
-
-Db:deauth()
 
 
