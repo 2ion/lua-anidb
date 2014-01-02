@@ -11,11 +11,15 @@ local List = require("pl.List")
 require("pack") -- string.pack() and string.unpack()
 
 local Pkg = {
+    -- enum
     error = {},
     amask = {},
+    datemask = {},
+
+    -- session state
     session = {},
 
-    quiet = false,
+    -- connection
     client = "luanidb",
     clientver = "0",
     protover = "3",
@@ -24,6 +28,9 @@ local Pkg = {
     timeout = 15,
     retries = 1,
     string_encoding = "UTF-8",
+
+    -- misc
+    quiet = false,
     default_amask = "b2f0e0fc000000"
 }
 
@@ -108,7 +115,7 @@ function Pkg:querystring(t)
     local str = ""
 
     if not t then
-        log{"luanidb:querystring(): no arguments"}
+        self:log{"luanidb:querystring(): no arguments"}
         return str
     end
 
@@ -145,6 +152,7 @@ function Pkg:send(cmd, args)
         return self.error.NOT_CONNECTED
     end
 
+    local args = args and args or {}
     local query = string.format("%s %s", cmd, self:querystring(args))
     local retries_left = self.retries + 1
     local data, errno
@@ -226,12 +234,12 @@ end
 function Pkg:auth(username, password)
     local errno = 0
 
-    if not username or not password then
-        return self.error.TOO_FEW_ARGUMENTS
-    end
-
     if not self:is_connected() then
         return self.error.NOT_CONNECTED
+    end
+
+    if not username or not password then
+        return self.error.TOO_FEW_ARGUMENTS
     end
 
     if self:is_loggedin() then
@@ -341,10 +349,19 @@ function Pkg:parse_response(data)
 
     -- tail
     -- <field>'|'<field2>'|' and so on
+    -- FIXME: convert legacy tailfields code to the new variant
+    -- (see > 2 case)
     if #v.lines == 2 then
         v.tailfields = Stringx.split(v.lines[2], '|')
     end
-    
+
+    if #v.lines > 2 then
+        v.tail = {}
+        for line=2,#v.lines do
+            table.insert(tail, Stringx.split(v.lines[line], '|'))
+        end
+    end
+
     return v
 end
 
@@ -449,6 +466,35 @@ function Pkg:anime_description(aid)
     end
 
     return 0, description
+end
+
+function Pkg:calendar()
+    if not self:is_authenticated() then
+        return self.error.NOT_AUTHENTICATED
+    end
+
+    local cal = { aired = {}, upcoming = {} }
+
+    local errno = self:send("CALENDAR")
+
+    if errno ~= 0 then
+        return errno
+    end
+
+    if self.data.code ~= 297 then
+        return self.error.UNKNOWN_RESPONSE
+    end
+
+    for i=1,#self.data.tail do
+        local x = self.data.tail[i]
+        print(x[1],x[2],x[3])
+    end
+end
+
+function Pkg:decode_datemask(hexstring)
+    local hexstring = hexstring
+    local datemask = {}
+    local mask = 0
 end
 
 function Pkg:encode_amask(flags)
@@ -651,6 +697,16 @@ enum_bytes(Pkg.amask[7], {
     "OTHER_COUNT",
     "CREDITS_COUNT",
     "SPECIALS_COUNT"
+}, 0)
+
+enum_bytes(Pkg.datemask, {
+    "ENDDATE_UNKNOWN_YEAR",
+    "STARTDATE_UNKNOWN_YEAR",
+    "HAS_ENDED",
+    "ENDDATE_UNKNOWN_MONTH_DAY",
+    "ENDDATE_UNKNOWN_DAY",
+    "STARTDATE_UNKNOWN_MONTH_DAY",
+    "STARTDATE_UNKNOWN_DAY"
 }, 0)
 
 for byteidx,byte in ipairs(Pkg.amask) do
