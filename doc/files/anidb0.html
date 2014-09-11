@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+    <title>Luadocs for anidb0.lua</title>
+    <link rel="stylesheet" href="../luadoc.css" type="text/css" />
+    <!--meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/-->
+</head>
+
+<body>
+<div id="container">
+
+<div id="product">
+    <div id="product_logo"></div>
+    <div id="product_name"><big><b></b></big></div>
+    <div id="product_description"></div>
+</div> <!-- id="product" -->
+
+<div id="main">
+
+<div id="navigation">
+
+
+<h1>LuaDoc</h1>
+<ul>
+	
+	<li><a href="../index.html">Index</a></li>
+	
+</ul>
+
+
+<!-- Module list -->
+
+
+
+<!-- File list -->
+
+<h1>Files</h1>
+<ul>
+
+	<li><strong>anidb0.lua</strong></li>
+	
+</ul>
+
+
+
+
+
+
+</div> <!-- id="navigation" -->
+
+<div id="content">
+
+<h1>File <code>anidb0.lua</code></h1>
+
+
+
+
+
+
+
+<h2>Functions</h2>
+<table class="function_list">
+
+    <tr>
+    <td class="name" nowrap><a href="#Pkg:decode_amask">Pkg:decode_amask</a>&nbsp;(hexstring)</td>
+    <td class="summary">decode the hexstring form of an amask to an array of flags as accepted by anime_by_name() and anime_by_id() </td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#Pkg:log">Pkg:log</a>&nbsp;(t)</td>
+    <td class="summary">Log to stderr if logging is enabled </td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#Pkg:new">Pkg:new</a>&nbsp;()</td>
+    <td class="summary">Create a new instance of the library </td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#Pkg:querystring">Pkg:querystring</a>&nbsp;(t)</td>
+    <td class="summary">Construct a querystring from the arguments passed in t.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#Pkg:send">Pkg:send</a>&nbsp;(cmd, args)</td>
+    <td class="summary">Sends a command to the server, handles general error codes and retrieves and parses the data, storing it in Pkg.data.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#enum">enum</a>&nbsp;(G, t, nullshift)</td>
+    <td class="summary">Enumerate the values in an environment, and assign them values 2^x so that they can be used as bitmasks.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#enum_bytes">enum_bytes</a>&nbsp;(G, t, nullshift)</td>
+    <td class="summary">Like enum(), but doesn't generate the G._vv </td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#onein">onein</a>&nbsp;(x, ...)</td>
+    <td class="summary">Check if the value x is equal to a value among the vargs </td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#reverse_list">reverse_list</a>&nbsp;(l)</td>
+    <td class="summary">Reverse an array </td>
+    </tr>
+
+</table>
+
+
+
+
+
+
+<br/>
+<br/>
+
+
+
+
+<h2><a name="functions"></a>Functions</h2>
+<dl class="function">
+
+
+
+<dt><a name="Pkg:decode_amask"></a><strong>Pkg:decode_amask</strong>&nbsp;(hexstring)</dt>
+<dd>
+decode the hexstring form of an amask to an array of flags as accepted by anime_by_name() and anime_by_id()
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  hexstring: an encoded amask
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+an array of flags
+
+
+
+</dd>
+
+
+
+
+<dt><a name="Pkg:log"></a><strong>Pkg:log</strong>&nbsp;(t)</dt>
+<dd>
+Log to stderr if logging is enabled
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  t: table in printf() format ("<format string>", ...)
+	</li>
+	
+</ul>
+
+
+
+
+
+
+
+
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="">
+		enable_logging()
+	</a>
+	
+</ul>
+
+</dd>
+
+
+
+
+<dt><a name="Pkg:new"></a><strong>Pkg:new</strong>&nbsp;()</dt>
+<dd>
+Create a new instance of the library
+
+
+
+
+
+
+
+<h3>Return value:</h3>
+library object
+
+
+
+</dd>
+
+
+
+
+<dt><a name="Pkg:querystring"></a><strong>Pkg:querystring</strong>&nbsp;(t)</dt>
+<dd>
+Construct a querystring from the arguments passed in t. Appends the session key &s=$sessionkey
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  t: table of kv-pairs
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+query string in the form a=b&c=d and so on
+
+
+
+</dd>
+
+
+
+
+<dt><a name="Pkg:send"></a><strong>Pkg:send</strong>&nbsp;(cmd, args)</dt>
+<dd>
+Sends a command to the server, handles general error codes and retrieves and parses the data, storing it in Pkg.data.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  cmd: string API command
+	</li>
+	
+	<li>
+	  args: kv-table to be passed to querystring()
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+0 in case of success, Pkg.error.* in case of an error.
+
+
+
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="">
+		querystring()
+	</a>
+	
+	<li><a href="">
+		parse_response()
+	</a>
+	
+</ul>
+
+</dd>
+
+
+
+
+<dt><a name="enum"></a><strong>enum</strong>&nbsp;(G, t, nullshift)</dt>
+<dd>
+Enumerate the values in an environment, and assign them values 2^x so that they can be used as bitmasks. Creates a subtable _vv in G with the reversed mapping (enum_value -> key)
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  G: table, environment
+	</li>
+	
+	<li>
+	  t: table, array of strings
+	</li>
+	
+	<li>
+	  nullshift: the power of x to begin the enumeration with (defaults to 1)
+	</li>
+	
+</ul>
+
+
+
+
+
+
+
+
+</dd>
+
+
+
+
+<dt><a name="enum_bytes"></a><strong>enum_bytes</strong>&nbsp;(G, t, nullshift)</dt>
+<dd>
+Like enum(), but doesn't generate the G._vv
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  G: table, environment
+	</li>
+	
+	<li>
+	  t: table, array of strings
+	</li>
+	
+	<li>
+	  nullshift: the power of x to begin the enumeration with (defaults to 1)
+	</li>
+	
+</ul>
+
+
+
+
+
+
+
+
+<h3>See also:</h3>
+<ul>
+	
+	<li><a href="../files/anidb0.html#enum">
+		enum
+	</a>
+	
+</ul>
+
+</dd>
+
+
+
+
+<dt><a name="onein"></a><strong>onein</strong>&nbsp;(x, ...)</dt>
+<dd>
+Check if the value x is equal to a value among the vargs
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  x: value
+	</li>
+	
+	<li>
+	  ...: vargs
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+true if there is a matching value, false if not
+
+
+
+</dd>
+
+
+
+
+<dt><a name="reverse_list"></a><strong>reverse_list</strong>&nbsp;(l)</dt>
+<dd>
+Reverse an array
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  l: list
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+reversed list
+
+
+
+</dd>
+
+
+</dl>
+
+
+
+
+
+
+
+</div> <!-- id="content" -->
+
+</div> <!-- id="main" -->
+
+<div id="about">
+    <p><a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0!" height="31" width="88" /></a></p>
+</div> <!-- id="about" -->
+
+</div> <!-- id="container" -->
+</body>
+</html>

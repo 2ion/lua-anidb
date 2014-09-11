@@ -1,14 +1,13 @@
 #!/usr/bin/env lua5.2
 
--- anidb client library
--- Copyright (C) 2013 Jens Oliver John
+-- anidb UDP client library
+-- Copyright (C) 2013-2014 Jens Oliver John
 -- Licensed under the GNU General Public License v3 or later.
 -- See the file LICENSE for details.
 
 local Socket = require("socket")
 local Stringx = require("pl.stringx")
 local List = require("pl.List")
-require("pack") -- string.pack() and string.unpack()
 
 local Pkg = {
     -- enum
@@ -495,6 +494,7 @@ function Pkg:decode_datemask(hexstring)
     local hexstring = hexstring
     local datemask = {}
     local mask = 0
+    -- TODO
 end
 
 function Pkg:encode_amask(flags)
