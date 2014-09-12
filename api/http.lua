@@ -9,6 +9,7 @@ local posix = require 'posix'
 local http = require 'socket.http'
 local zlib = require 'zlib'
 local stringx = require 'pl.stringx'
+local file = require 'pl.file'
 local pretty = require 'pl.pretty'
 local list = require 'pl.List'
 local api = setmetatable({
@@ -19,7 +20,8 @@ local api = setmetatable({
   _CATALOG = "http://anidb.net/api/anime-titles.dat.gz",
   _ANIDB_CLIENT = "lua-anidb-http",
   _ANIDB_CLIENTVER = "0",
-  _ANIDB_PROTOVER = "1"
+  _ANIDB_PROTOVER = "1",
+  _DEBUG = false
 }, {
   __index = api,
   __call = function (self) 
@@ -45,13 +47,14 @@ local function get_lastmod_timediff(file)
     return false
   end
   local mtime_s = posix.stat(file).mtime
-  local now_s = posix.clock_gettime("monotonic")
+  local now_s = posix.clock_gettime("realtime")
   return (now_s-mtime_s)
-  return 0
 end
 
 function api:log(...)
-  print("anidb.api.http: "..string.format(...))
+  if self._DEBUG then
+    print("anidb.api.http: "..string.format(...))
+  end
 end
 
 function api:init(cachedir)
@@ -88,10 +91,10 @@ function api:init_catalog()
   end
   if not posix.access(self.catalog_file) or 
     (posix.access(self.catalog_file) and
-      get_lastmod_timediff(self.catalog_file)>=86400) then
+      get_lastmod_timediff(self.catalog_file)>=86400) then self:log("init_catalog: Requesting a new catalog")
     do_reparse = true
     local b, s = http.request(self._CATALOG)
-    if not b then self:log("init_catalog: cannot retrieve catalog.")
+    if not b then self:log("init_catalog: could not retrieve catalog")
       return exit_cleanup()
     end
     local f = io.open(self.catalog_file, "w")
@@ -101,8 +104,13 @@ function api:init_catalog()
       return exit_cleanup()
     end
   end
-  if do_reparse then
+  if do_reparse then self:log("init_catalog: Parsing catalog")
     self:parse_csv_catalog()
+  else self:log("init_catalog: Loading cached catalog")
+    self.catalog = pretty.read(file.read(self.catalog_data))
+    if not self.catalog then
+      error("FATAL: init_catalog: catalog cache file is not a valid table: " .. self.catalog_data)
+    end
   end
   return true
 end
