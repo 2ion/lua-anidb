@@ -34,6 +34,15 @@ local function dump_table(t, file)
   return true
 end
 
+local function get_lastmod_timediff(file)
+  if not posix.access(file) then
+    return false
+  end
+  local mtime_s = posix.stat(file).mtime
+  local now_s = posix.clock_gettime("monotonic")
+  return (now_s-mtime_s)
+  return 0
+end
 
 function api:log(...)
   print("anidb.api.http: "..string.format(...))
@@ -66,23 +75,30 @@ end
 
 function api:init_catalog()
   self.catalog = {}
-  if not posix.access(self.catalog_file) then
-    print("NOT PRESENT")
-    os.exit(0)
+  local do_reparse = false
+  local function exit_cleanup()
+    posix.unlink(self.catalog_file)
+    return false
+  end
+  if not posix.access(self.catalog_file) or 
+    (posix.access(self.catalog_file) and
+      get_lastmod_timediff(self.catalog_file)>=86400) then
+    do_reparse = true
     local b, s = http.request(self._CATALOG)
-    if not b then
-      self:log("init_catalog: cannot retrieve catalog.")
-      return false
+    if not b then self:log("init_catalog: cannot retrieve catalog.")
+      return exit_cleanup()
     end
     local f = io.open(self.catalog_file, "w")
     if f:write(b) then
       f:close()
-    else
-      self:log("init_catalog: failed to write catalog file")
-      return false
+    else self:log("init_catalog: failed to write catalog file")
+      return exit_cleanup()
     end
   end
-  self:parse_csv_catalog()
+  if do_reparse then
+    self:parse_csv_catalog()
+  end
+  return true
 end
 
 function api:read_zipfile(file)
