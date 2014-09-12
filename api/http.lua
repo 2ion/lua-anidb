@@ -1,6 +1,9 @@
 #!/usr/bin/env lua5.2
 
 -- AniDB.net HTTP API client library
+-- Copyright (C) 2014 Jens Oliver John
+-- Licensed under the GNU General Public License v3 or later.
+-- See the file LICENSE for details.
 
 local posix = require 'posix'
 local http = require 'socket.http'
@@ -13,7 +16,10 @@ local api = setmetatable({
   _AUTHOR = "Jens Oliver John",
   _HOMEPAGE = "https://github.com/2ion/lua-anidb",
   _LICENSE = "GPL3",
-  _CATALOG = "http://anidb.net/api/anime-titles.dat.gz"
+  _CATALOG = "http://anidb.net/api/anime-titles.dat.gz",
+  _ANIDB_CLIENT = "lua-anidb-http",
+  _ANIDB_CLIENTVER = "0",
+  _ANIDB_PROTOVER = "1"
 }, {
   __index = api,
   __call = function (self) 
