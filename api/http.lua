@@ -147,8 +147,7 @@ function api:parse_csv_catalog()
       local csv = stringx.split(line, '|')
       local aid = tonumber(csv[1])
       local type = titletype2string(tonumber(csv[2]))
-      local lng = csv[3]
-      local title = csv[4]
+      local lng, title = csv[3], csv[4]
       if not self.catalog[aid] then
         self.catalog[aid] = {}
       end
