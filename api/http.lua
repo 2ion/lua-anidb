@@ -205,14 +205,24 @@ function api:parse_csv_catalog()
   return true
 end
 
-function api:search(expr)
+function api:search(expr, min_word_count)
   if not self.catalog or not self.catalog_index then
     return false
   end
+  local mwc = tonumber(min_word_count) or 0
   local ii = self.catalog_index[expr]
   if ii then return {ii} end
   local r = {}
-  local tl = tokenize(expr)
+  local tl = tokenize(expr, tklen)
+  if mwc > 0 then
+    tl = tl:filter(function (t)
+      if stringx.count(t, " ") < mwc then
+        return false
+      else
+        return true
+      end
+    end)
+  end
   tl:foreach(function (token)
     local bucket = self.catalog_hash_table[token]
     if bucket then
