@@ -258,7 +258,7 @@ function api:search(expr, min_word_count, fs_threshold, fs_function)
   end)
   if #r < fst then self:log("search(): commencing full search using method: "..fsf)
     for title,aid in pairs(self.catalog_index) do
-      if stringx[fsf](title, expr) then
+      if fsf(title, expr) then
         table.insert(r, aid)
       end
     end
