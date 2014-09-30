@@ -213,7 +213,7 @@ function api:search(expr, min_word_count)
   local ii = self.catalog_index[expr]
   if ii then return {ii} end
   local r = {}
-  local tl = tokenize(expr, tklen)
+  local tl = tokenize(expr)
   if mwc > 0 then
     tl = tl:filter(function (t)
       if stringx.count(t, " ") < mwc then
