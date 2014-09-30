@@ -66,6 +66,17 @@ local function tokenize(s)
   return T
 end
 
+local function uniq(t)
+  local d, r = {}, {}
+  for _,e in ipairs(t) do
+    if not d[e] then
+      table.insert(r, e)
+      d[e] = true
+    end
+  end
+  return r
+end
+
 function api:log(...)
   if self._DEBUG then
     print("anidb.api.http: "..string.format(...))
@@ -231,7 +242,7 @@ function api:search(expr, min_word_count)
       end
     end
   end)
-  return r
+  return uniq(r)
 end
 
 return api
