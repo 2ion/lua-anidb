@@ -21,7 +21,8 @@ local api = setmetatable({
   _ANIDB_CLIENT = "lua-anidb-http",
   _ANIDB_CLIENTVER = "0",
   _ANIDB_PROTOVER = "1",
-  _DEBUG = false
+  _DEBUG = false,
+  _FORCE_CATALOG_REPARSE = false
 }, {
   __index = api,
   __call = function (self) 
@@ -49,6 +50,20 @@ local function get_lastmod_timediff(file)
   local mtime_s = posix.stat(file).mtime
   local now_s = posix.clock_gettime("realtime")
   return (now_s-mtime_s)
+end
+
+local function tokenize(s)
+  local tl = stringx.split(s, ' ')
+  local T = list.new()
+  for i=1,#tl do
+    table.insert(T, tl[i])
+    local stem = tl[i]
+    for j=i+1,#tl do
+      stem = stem .. " " .. tl[j]
+      table.insert(T, stem)
+    end
+  end
+  return T
 end
 
 function api:log(...)
@@ -79,6 +94,8 @@ function api:init_home(catalog_dir)
   end
   self.catalog_file = self.catalog_dir.."/anime-titles.dat.gz"
   self.catalog_data = self.catalog_dir.."/catalog.lua"
+  self.catalog_index_data = self.catalog_dir.."/catalog_index.lua"
+  self.catalog_hash_data = self.catalog_dir.."/catalog_hasht.lua"
   return true
 end
 
@@ -104,12 +121,17 @@ function api:init_catalog()
       return exit_cleanup()
     end
   end
-  if do_reparse then self:log("init_catalog: Parsing catalog")
+  if do_reparse or self._FORCE_CATALOG_REPARSE then self:log("init_catalog: Parsing catalog")
     self:parse_csv_catalog()
-  else self:log("init_catalog: Loading cached catalog")
+  else self:log("init_catalog: Loading cached data")
     self.catalog = pretty.read(file.read(self.catalog_data))
+    self.catalog_index = pretty.read(file.read(self.catalog_index_data))
+    self.catalog_hash_table = pretty.read(file.read(self.catalog_hash_data))
     if not self.catalog then
       error("FATAL: init_catalog: catalog cache file is not a valid table: " .. self.catalog_data)
+    end
+    if not self.catalog_index then
+      error("FATAL: init_catalog: catalog index cache file is not a valid table: " .. self.catalog_index_data)
     end
   end
   return true
@@ -140,6 +162,8 @@ function api:parse_csv_catalog()
     }
   end
   self.catalog = {}
+  self.catalog_index = {}
+  self.catalog_hash_table = {}
   local d = self:read_zipfile(self.catalog_file)
   local lines = stringx.splitlines(d)
   lines = list.slice(lines, 4, -1)
@@ -164,9 +188,40 @@ function api:parse_csv_catalog()
       elseif type=="official" then
         prefix.official = title
       end
+      -- index
+      self.catalog_index[title] = aid
+      -- hash table
+      local tlist = tokenize(title)
+      tlist:foreach(function (token)
+        if not self.catalog_hash_table[token] then
+          self.catalog_hash_table[token] = {}
+        end
+        table.insert(self.catalog_hash_table[token], aid)
+      end)
     end)
   dump_table(self.catalog, self.catalog_data)
+  dump_table(self.catalog_index, self.catalog_index_data)
+  dump_table(self.catalog_hash_table, self.catalog_hash_data)
   return true
+end
+
+function api:search(expr)
+  if not self.catalog or not self.catalog_index then
+    return false
+  end
+  local ii = self.catalog_index[expr]
+  if ii then return {ii} end
+  local r = {}
+  local tl = tokenize(expr)
+  tl:foreach(function (token)
+    local bucket = self.catalog_hash_table[token]
+    if bucket then
+      for _,aid in pairs(bucket) do
+        table.insert(r, aid)
+      end
+    end
+  end)
+  return r
 end
 
 return api
