@@ -77,12 +77,10 @@ local function read_zipfile(f)
   return zlib.inflate()(file.read(f))
 end
 
-local function write_zipfile(file, data)
+local function write_zipfile(f, data)
   local zd = zlib.deflate(zlib.BEST_COMPRESSION)(data, 'finish')
   if not zd then return nil end
-  local h = io.open(file, "w")
-  h:write(zd)
-  h:close()
+  file.write(f, zd)
   return true
 end
 
@@ -251,7 +249,7 @@ function api:search(expr, min_word_count, fs_threshold, fs_function)
       end
     end
   end)
-  if #r < fst then self:log("search(): commencing full search: "..fsf)
+  if #r < fst then self:log("search(): commencing full search using method: "..fsf)
     for title,aid in pairs(self.catalog_index) do
       if stringx[fsf](title, expr) then
         table.insert(r, aid)
