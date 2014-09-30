@@ -163,6 +163,13 @@ function api:init_catalog()
   return true
 end
 
+function api:exit()
+  self.catalog = nil
+  self.catalog_index = nil
+  self.catalog_hash_table = nil
+  return true
+end
+
 function api:parse_csv_catalog()
   local function titletype2string(type)
     if      type==1 then return "primary"
