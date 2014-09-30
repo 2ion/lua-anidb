@@ -216,11 +216,13 @@ function api:parse_csv_catalog()
   return true
 end
 
-function api:search(expr, min_word_count)
+function api:search(expr, min_word_count, fs_threshold, fs_function)
   if not self.catalog or not self.catalog_index then
     return false
   end
-  local mwc = tonumber(min_word_count) or 0
+  local mwc = tonumber(min_word_count) or -1
+  local fst = tonumber(fullsearch_threshold) or -1
+  local fsf = fs_anchor or "startswith" -- endswith, lfind
   local ii = self.catalog_index[expr]
   if ii then return {ii} end
   local r = {}
@@ -242,6 +244,13 @@ function api:search(expr, min_word_count)
       end
     end
   end)
+  if #r < fst then self:log("search(): commencing full search: "..fsf)
+    for title,aid in pairs(self.catalog_index) do
+      if stringx[fsf](title, expr) then
+        table.insert(r, aid)
+      end
+    end
+  end
   return uniq(r)
 end
 
