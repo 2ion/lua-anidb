@@ -36,13 +36,6 @@ local function ifnot(v)
   else return {} end
 end
 
-local function dump_table(t, file)
-  local h = io.open(file, "w")
-  h:write(pretty.write(t, "", true))
-  h:close()
-  return true
-end
-
 local function get_lastmod_timediff(file)
   if not posix.access(file) then
     return false
@@ -77,6 +70,30 @@ local function uniq(t)
   return r
 end
 
+local function read_zipfile(f)
+  if not posix.access(f) then
+    return nil
+  end
+  return zlib.inflate()(file.read(f))
+end
+
+local function write_zipfile(file, data)
+  local zd = zlib.deflate(zlib.BEST_COMPRESSION)(data, 'finish')
+  if not zd then return nil end
+  local h = io.open(file, "w")
+  h:write(zd)
+  h:close()
+  return true
+end
+
+local function dump_table(t, file)
+  return write_zipfile(file, pretty.write(t, "", true))
+end
+
+local function read_table(file)
+  return pretty.read(read_zipfile(file))
+end
+
 function api:log(...)
   if self._DEBUG then
     print("anidb.api.http: "..string.format(...))
@@ -104,9 +121,9 @@ function api:init_home(catalog_dir)
     end
   end
   self.catalog_file = self.catalog_dir.."/anime-titles.dat.gz"
-  self.catalog_data = self.catalog_dir.."/catalog.lua"
-  self.catalog_index_data = self.catalog_dir.."/catalog_index.lua"
-  self.catalog_hash_data = self.catalog_dir.."/catalog_hasht.lua"
+  self.catalog_data = self.catalog_dir.."/catalog.lua.gz"
+  self.catalog_index_data = self.catalog_dir.."/catalog_index.lua.gz"
+  self.catalog_hash_data = self.catalog_dir.."/catalog_hasht.lua.gz"
   return true
 end
 
@@ -135,9 +152,9 @@ function api:init_catalog()
   if do_reparse or self._FORCE_CATALOG_REPARSE then self:log("init_catalog: Parsing catalog")
     self:parse_csv_catalog()
   else self:log("init_catalog: Loading cached data")
-    self.catalog = pretty.read(file.read(self.catalog_data))
-    self.catalog_index = pretty.read(file.read(self.catalog_index_data))
-    self.catalog_hash_table = pretty.read(file.read(self.catalog_hash_data))
+    self.catalog = read_table(self.catalog_data)
+    self.catalog_index = read_table(self.catalog_index_data)
+    self.catalog_hash_table = read_table(self.catalog_hash_data)
     if not self.catalog then
       error("FATAL: init_catalog: catalog cache file is not a valid table: " .. self.catalog_data)
     end
@@ -146,16 +163,6 @@ function api:init_catalog()
     end
   end
   return true
-end
-
-function api:read_zipfile(file)
-  if not posix.access(file) then
-    return nil
-  end
-  local h = io.open(file, "r")
-  local zd = h:read("*a")
-  h:close()
-  return zlib.inflate()(zd)
 end
 
 function api:parse_csv_catalog()
@@ -175,7 +182,7 @@ function api:parse_csv_catalog()
   self.catalog = {}
   self.catalog_index = {}
   self.catalog_hash_table = {}
-  local d = self:read_zipfile(self.catalog_file)
+  local d = read_zipfile(self.catalog_file)
   local lines = stringx.splitlines(d)
   lines = list.slice(lines, 4, -1)
   lines:foreach(function (line)
