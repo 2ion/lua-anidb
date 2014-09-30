@@ -234,7 +234,7 @@ function api:search(expr, min_word_count, fs_threshold, fs_function)
   end
   local mwc = tonumber(min_word_count) or -1
   local fst = tonumber(fs_threshold) or -1
-  local fsf = fs_function or "startswith" -- endswith, lfind
+  local fsf = stringx[fs_function] or stringx.startswith
   local ii = self.catalog_index[expr]
   if ii then return {ii} end
   local r = {}
