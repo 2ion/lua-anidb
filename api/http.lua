@@ -77,6 +77,18 @@ local function uniq(t)
   return r
 end
 
+local function one_of(v, ...)
+  if select('#', ...) == 0 then
+    return false
+  end
+  for _,e in ipairs{...} do
+    if e == v then
+      return true
+    end
+  end
+  return false
+end
+
 local function read_zipfile(f)
   if not posix.access(f) then return nil end
   return zlib.inflate()(file.read(f))
@@ -217,14 +229,10 @@ function api:parse_csv_catalog()
         self.catalog[aid][lng] = new_lng()
       end
       local prefix = self.catalog[aid][lng]
-      if type=="primary" then
-        prefix.primary = title
-      elseif type=="synonyms" then
-        table.insert(prefix.synonyms, title)
-      elseif type=="shorttitles" then
-        table.insert(prefix.shorttitles, title)
-      elseif type=="official" then
-        prefix.official = title
+      if one_of(type, "primary", "official") then
+        prefix[type] = title
+      elseif one_of(type, "shorttitles", "synonyms") then
+        table.insert(prefix[type], title)
       end
       -- index
       self.catalog_index[title] = aid
@@ -287,7 +295,7 @@ function api:info(aid)
   if self.cache[aid] then
     if self.cache[aid].info
       and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
-        return self.cache[aid].info
+      return self.cache[aid].info
       end
   else
     self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
