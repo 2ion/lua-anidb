@@ -5,13 +5,15 @@
 -- Licensed under the GNU General Public License v3 or later.
 -- See the file LICENSE for details.
 
-local posix = require 'posix'
-local http = require 'socket.http'
-local zlib = require 'zlib'
-local stringx = require 'pl.stringx'
 local file = require 'pl.file'
-local pretty = require 'pl.pretty'
+local http = require 'socket.http'
 local list = require 'pl.List'
+local posix = require 'posix'
+local pretty = require 'pl.pretty'
+local stringx = require 'pl.stringx'
+local url = require 'socket.url'
+local zlib = require 'zlib'
+
 local api = setmetatable({
   _VERSION = "0.0",
   _AUTHOR = "Jens Oliver John",
@@ -21,8 +23,13 @@ local api = setmetatable({
   _ANIDB_CLIENT = "httpanidb",
   _ANIDB_CLIENTVER = "0",
   _ANIDB_PROTOVER = "1",
+  _ANIDB_DATA_REQUEST = "http://api.anidb.net:9001/httpapi?request=anime&client=%s&clientver=%s&protover=%s&aid=%d",
+  _ANIDB_REQUEST_LIMIT = 2,
   _DEBUG = false,
-  _FORCE_CATALOG_REPARSE = false
+  _FORCE_CATALOG_REPARSE = false,
+  _FORCE_REQUESTS = false,
+  _MAX_CATALOG_AGE = 86400,
+  _MAX_INFO_AGE = 86400
 }, {
   __index = api,
   __call = function (self) 
@@ -71,9 +78,7 @@ local function uniq(t)
 end
 
 local function read_zipfile(f)
-  if not posix.access(f) then
-    return nil
-  end
+  if not posix.access(f) then return nil end
   return zlib.inflate()(file.read(f))
 end
 
@@ -89,6 +94,7 @@ local function dump_table(t, file)
 end
 
 local function read_table(file)
+  if not posix.access(file) then return nil end
   return pretty.read(read_zipfile(file))
 end
 
@@ -122,6 +128,7 @@ function api:init_home(catalog_dir)
   self.catalog_data = self.catalog_dir.."/catalog.lua.gz"
   self.catalog_index_data = self.catalog_dir.."/catalog_index.lua.gz"
   self.catalog_hash_data = self.catalog_dir.."/catalog_hasht.lua.gz"
+  self.cache_data = self.catalog_dir.."/data.lua.gz"
   return true
 end
 
@@ -134,7 +141,7 @@ function api:init_catalog()
   end
   if not posix.access(self.catalog_file) or 
     (posix.access(self.catalog_file) and
-      get_lastmod_timediff(self.catalog_file)>=86400) then self:log("init_catalog: Requesting a new catalog")
+      get_lastmod_timediff(self.catalog_file)>=self._MAX_CATALOG_AGE) then self:log("init_catalog: Requesting a new catalog")
     do_reparse = true
     local b, s = http.request(self._CATALOG)
     if not b then self:log("init_catalog: could not retrieve catalog")
@@ -160,13 +167,21 @@ function api:init_catalog()
       error("FATAL: init_catalog: catalog index cache file is not a valid table: " .. self.catalog_index_data)
     end
   end
+  self.cache = ifnot(read_table(self.cache_data))
   return true
 end
 
 function api:exit()
+  local function setfree(ref, file)
+    if ref then
+      dump_table(ref, file)
+    ref = nil
+    end
+  end
   self.catalog = nil
   self.catalog_index = nil
   self.catalog_hash_table = nil
+  setfree(self.cache, self.cache_data)
   return true
 end
 
@@ -264,6 +279,41 @@ function api:search(expr, min_word_count, fs_threshold, fs_function)
     end
   end
   return uniq(r)
+end
+
+function api:info(aid)
+  local b = nil
+  local now = posix.clock_gettime("realtime")
+  if self.cache[aid] then
+    if self.cache[aid].info then
+      if (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
+        return self.cache[aid].info
+      end
+    end
+  else
+    self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
+  end
+  if (now-self.cache[aid].reqtime) >= 86400 then
+    self.cache[aid].reqcnt = 0
+  end
+  if not self.cache[aid].xml
+    or self.cache[aid].reqcnt < self._ANIDB_REQUEST_LIMIT
+    or self._FORCE_REQUESTS then self:log("info(): requesting XML for aid "..aid)
+    local zd = http.request(self:info_request_url(aid))
+    self.cache[aid].xml = zlib.inflate()(zd)
+    self.cache[aid].reqtime = now
+    self.cache[aid].reqcnt = self.cache[aid].reqcnt + 1
+  end
+  if not b then self:log("info(): failed to retrieve XML data")
+    return nil
+  end
+
+  return {}
+end
+
+function api:info_request_url(aid)
+  return string.format(self._ANIDB_DATA_REQUEST, url.escape(self._ANIDB_CLIENT),
+    url.escape(self._ANIDB_CLIENTVER), url.escape(self._ANIDB_PROTOVER), aid)
 end
 
 return api
