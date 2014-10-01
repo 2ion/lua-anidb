@@ -285,11 +285,10 @@ function api:info(aid)
   local b = nil
   local now = posix.clock_gettime("realtime")
   if self.cache[aid] then
-    if self.cache[aid].info then
-      if (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
+    if self.cache[aid].info
+      and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
         return self.cache[aid].info
       end
-    end
   else
     self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
   end
