@@ -8,11 +8,12 @@
 local file = require 'pl.file'
 local http = require 'socket.http'
 local list = require 'pl.List'
-local lxp = require 'lxp'
 local posix = require 'posix'
 local pretty = require 'pl.pretty'
 local stringx = require 'pl.stringx'
+local tablex = require 'pl.tablex'
 local url = require 'socket.url'
+local xml = require 'pl.xml'
 local zlib = require 'zlib'
 
 local api = setmetatable({
@@ -342,7 +343,10 @@ function api:info(aid)
     return nil
   end
 
-  self.cache[aid].info = self:parse_info_xml(self.cache[aid].xml)
+  self.cache[aid].info = self:info_parse_xml(self.cache[aid].xml)
+  if not self.cache[aid].info then
+    self:log("info(): Failed to parse the XML: No information available")
+  end
 
   return self.cache[aid].info
 end
@@ -352,35 +356,21 @@ function api:info_request_url(aid)
     url.escape(self._ANIDB_CLIENTVER), url.escape(self._ANIDB_PROTOVER), aid)
 end
 
-function api:parse_info_xml(xml)
-  local root = XMLElement.new()
-  local cur = root
-  function lxp_StartElement(p, e, attr)
-    cur = XMLElement.new(p, e, attr)
+function api:info_parse_xml(s)
+  local function filter_blanks(t)
+    return tablex.map(function (tv)
+      if type(tv) == "string" and tv == "\n" then
+        return nil
+      elseif type(tv) == "table" then
+        print 'table'
+        return filter_blanks(tv)
+      end
+      return tv
+    end, t)
   end
-  function lxp_EndElement(p, e)
-    cur = cur.parent or root
-  end
-  function lxp_DefaultExpand(p, s)
-    cur.text = s
-  end
-  local p = lxp.new{
-    StartElement = lxp_StartElement,
-    EndElement = lxp_EndElement,
-    DefaultExpand = lxp_DefaultExpand
-  }
-  p:setencoding("UTF-8")
-  local done = false
-  local stat, msg, line, col, pos = p:parse(xml)
-  if not stat then
-    self:log("parse_info_xml(): XML parser failed: %s @ %d:%d (%d)",
-      msg, line, col, pos)
-    return nil
-  else
-    self:log("parse_info_xml(): XML parser finished successfully")
-  end
-  p:close()
-  return root
+  local x = xml.parse(s, false, false)
+  x = filter_blanks(x)
+  return x
 end
 
 return api
