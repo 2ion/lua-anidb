@@ -1,0 +1,31 @@
+## lua-anidb
+
+HTTP and UDP client libraries for AniDB.net.
+
+### HTTP API library
+
+* Implements the AniDB.net HTTP API, exposing data retrieval
+  functionality
+* Honors all rate-limiting restrictions imposed on the API strictly
+  though override flags are available (warning: abusing the API might
+  result in a temporary or permanent ban!)
+
+#### Dependencies
+
+* Lua 5.2
+* lua-penlight (>= 1.3.1)
+* lua-socket
+* lua-zlib
+
+### UDP API library
+
+_Development of this library has been suspended indefinitely._
+
+* Implements the AniDB.net UDP API, exposing data retrieval, data upload
+  and account management functionality
+
+#### Dependencies
+
+* Lua 5.2
+* lua-penlight (>= 1.0)
+* lua-socket
