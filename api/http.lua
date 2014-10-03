@@ -1,6 +1,6 @@
 #!/usr/bin/env lua5.2
 
--- AniDB.net HTTP API client library
+--- AniDB.net HTTP API client library
 -- Copyright (C) 2014 Jens Oliver John
 -- Licensed under the GNU General Public License v3 or later.
 -- See the file LICENSE for details.
@@ -136,12 +136,21 @@ function XMLElement:parent(root)
   return self.parent or root
 end
 
+--- Write library-internal debug messages to stdout. Does nothing unless
+-- the _DEBUG flag has been set.
+-- @param ... printf-style format string and optionally arguments
+-- @return nothing
 function api:log(...)
   if self._DEBUG then
     print("anidb.api.http: "..string.format(...))
   end
 end
 
+--- Initialize the library. This function must be called before any
+-- other library function.
+-- @param cachedir The working directory to write cache data to.
+-- Defaults to ~/.anidb-http-api if empty.
+-- @ return true on success, false on failure
 function api:init(cachedir)
   if not self:init_home(cachedir or os.getenv("HOME").."/.anidb-http-api") then
     return false
@@ -152,6 +161,8 @@ function api:init(cachedir)
   return true
 end
 
+--- Ensure that the cache directory exists and set up internal file name
+-- variables accordingly. Called by api:init(), do not call directly.
 function api:init_home(catalog_dir)
   assert(catalog_dir)
   self.catalog_dir = catalog_dir
@@ -170,6 +181,16 @@ function api:init_home(catalog_dir)
   return true
 end
 
+--- Retrieve and process updated AniDB catalog data. By default and
+-- honouring the API specifications, a new catalog will be requested
+-- only once per day or if the locally stored catalog has been deleted.
+-- The maximum age of the locally stored catalog data may be modified by
+-- setting the _MAX_CATALOG_AGE variable to a value other than 86400
+-- [seconds]. Newly retrieved catalogs will be parsed into Lua data
+-- structures and stored locally, compressed in ZIP format. A reparsing
+-- of old locally stored catalog data may be triggered by setting
+-- _FORCE_CATALOG_REPARSE=true.
+-- @return true on success, false on failure
 function api:init_catalog()
   self.catalog = {}
   local do_reparse = false
@@ -209,6 +230,10 @@ function api:init_catalog()
   return true
 end
 
+--- API exit function that must be called before the main program exits.
+-- Upon calling, eventually retrieved data other than catalog data (for
+-- example, anime information) will be written to disk for later fast
+-- access).
 function api:exit()
   local function setfree(ref, file)
     if ref then
@@ -223,6 +248,8 @@ function api:exit()
   return true
 end
 
+--- Parse the catalog data retrieved from AniDB. It shouldn't be
+-- necessary to call this function.
 function api:parse_csv_catalog()
   local function titletype2string(type)
     if      type==1 then return "primary"
@@ -277,6 +304,42 @@ function api:parse_csv_catalog()
   return true
 end
 
+--- Searches the catalog by anime title and returns a list of anime IDs
+-- that match the respective title search. These IDs may be used in
+-- api:info() to retrieve anime-specific data. The search function uses
+-- a two-step search strategy: In the first step, a hash table created
+-- by tokenizing titles is being searched for matches with the also
+-- tokenized input string. Tokenizing as of now means to split strings
+-- at blank spaces (%s). For example, the search string "Banner of the
+-- Stars" would yield a token list { Banner, of, the, Stars } and would
+-- thus the match imaginary titles "of the Stars", "of", "of the" or
+-- "Banner of". In order to make the search more precise, the required
+-- minimum size of compound tokens can be increased, ie. setting
+-- $min_word_count to 3 would mean that titles "Banner of the" and "of
+-- the Stars" would be valid in the light of the above example, but "of
+-- the" would not match anything. In token lists, the order of the
+-- tokens as they appear in the individual titles is being preserved. In
+-- the second step, a regular string search search is being performed.
+-- However, a full string search on all titles will only be performed if
+-- the number of results from the hash-based search is less than
+-- $fs_threshold. $fs_function specifies the search strategy being used.
+-- If the full-text string search produces results that overlap with the
+-- results from the hash-based search, duplicate results will be cleaned
+-- up.
+-- @param expr The search expression, a regular string
+-- @param min_word_count The minimum number of words a token to be used
+-- in the has table search must contain, defaults to -1 (no limit); 0
+-- also does nothing
+-- @param fs_threshold The minimum number of results expected from the
+-- hash table search. If the number of results is below this threshold,
+-- an additional full-text search will commence
+-- @param fs_function The string-matching strategy to be used in the
+-- full text search. Valid values are "startswith", "endswith" and
+-- "count" (from the Penlight stringx library).
+-- @return A list of anime IDs (integers) that match the search
+-- expression. In the case of an internal error, false is being
+-- returned. In the case that there was no match, an empty list is being
+-- returned.
 function api:search(expr, min_word_count, fs_threshold, fs_function)
   if not self.catalog or not self.catalog_index then
     return false

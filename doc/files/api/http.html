@@ -64,6 +64,46 @@
 
 
 
+<h2>Functions</h2>
+<table class="function_list">
+
+    <tr>
+    <td class="name" nowrap><a href="#api:exit">api:exit</a>&nbsp;()</td>
+    <td class="summary">API exit function that must be called before the main program exits.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:init">api:init</a>&nbsp;(cachedir)</td>
+    <td class="summary">Initialize the library.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:init_catalog">api:init_catalog</a>&nbsp;()</td>
+    <td class="summary">Retrieve and process updated AniDB catalog data.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:init_home">api:init_home</a>&nbsp;(catalog_dir)</td>
+    <td class="summary">Ensure that the cache directory exists and set up internal file name variables accordingly.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:log">api:log</a>&nbsp;(...)</td>
+    <td class="summary">Write library-internal debug messages to stdout.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:parse_csv_catalog">api:parse_csv_catalog</a>&nbsp;()</td>
+    <td class="summary">Parse the catalog data retrieved from AniDB.</td>
+    </tr>
+
+    <tr>
+    <td class="name" nowrap><a href="#api:search">api:search</a>&nbsp;(expr, min_word_count, fs_threshold, fs_function)</td>
+    <td class="summary">Searches the catalog by anime title and returns a list of anime IDs that match the respective title search.</td>
+    </tr>
+
+</table>
+
 
 
 
@@ -74,6 +114,187 @@
 
 
 
+
+<h2><a name="functions"></a>Functions</h2>
+<dl class="function">
+
+
+
+<dt><a name="api:exit"></a><strong>api:exit</strong>&nbsp;()</dt>
+<dd>
+API exit function that must be called before the main program exits. Upon calling, eventually retrieved data other than catalog data (for example, anime information) will be written to disk for later fast access).
+
+
+
+
+
+
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:init"></a><strong>api:init</strong>&nbsp;(cachedir)</dt>
+<dd>
+Initialize the library. This function must be called before any other library function.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  cachedir: The working directory to write cache data to. Defaults to ~/.anidb-http-api if empty. @ return true on success, false on failure
+	</li>
+	
+</ul>
+
+
+
+
+
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:init_catalog"></a><strong>api:init_catalog</strong>&nbsp;()</dt>
+<dd>
+Retrieve and process updated AniDB catalog data. By default and honouring the API specifications, a new catalog will be requested only once per day or if the locally stored catalog has been deleted. The maximum age of the locally stored catalog data may be modified by setting the _MAX_CATALOG_AGE variable to a value other than 86400 [seconds]. Newly retrieved catalogs will be parsed into Lua data structures and stored locally, compressed in ZIP format. A reparsing of old locally stored catalog data may be triggered by setting _FORCE_CATALOG_REPARSE=true.
+
+
+
+
+
+
+
+<h3>Return value:</h3>
+true on success, false on failure
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:init_home"></a><strong>api:init_home</strong>&nbsp;(catalog_dir)</dt>
+<dd>
+Ensure that the cache directory exists and set up internal file name variables accordingly. Called by api:init(), do not call directly.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  catalog_dir: 
+	</li>
+	
+</ul>
+
+
+
+
+
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:log"></a><strong>api:log</strong>&nbsp;(...)</dt>
+<dd>
+Write library-internal debug messages to stdout. Does nothing unless the _DEBUG flag has been set.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  ...: printf-style format string and optionally arguments
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+nothing
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:parse_csv_catalog"></a><strong>api:parse_csv_catalog</strong>&nbsp;()</dt>
+<dd>
+Parse the catalog data retrieved from AniDB. It shouldn't be necessary to call this function.
+
+
+
+
+
+
+
+
+
+</dd>
+
+
+
+
+<dt><a name="api:search"></a><strong>api:search</strong>&nbsp;(expr, min_word_count, fs_threshold, fs_function)</dt>
+<dd>
+Searches the catalog by anime title and returns a list of anime IDs that match the respective title search. These IDs may be used in api:info() to retrieve anime-specific data. The search function uses a two-step search strategy: In the first step, a hash table created by tokenizing titles is being searched for matches with the also tokenized input string. Tokenizing as of now means to split strings at blank spaces (%s). For example, the search string "Banner of the Stars" would yield a token list { Banner, of, the, Stars } and would thus the match imaginary titles "of the Stars", "of", "of the" or "Banner of". In order to make the search more precise, the required minimum size of compound tokens can be increased, ie. setting $min_word_count to 3 would mean that titles "Banner of the" and "of the Stars" would be valid in the light of the above example, but "of the" would not match anything. In token lists, the order of the tokens as they appear in the individual titles is being preserved. In the second step, a regular string search search is being performed. However, a full string search on all titles will only be performed if the number of results from the hash-based search is less than $fs_threshold. $fs_function specifies the search strategy being used. If the full-text string search produces results that overlap with the results from the hash-based search, duplicate results will be cleaned up.
+
+
+<h3>Parameters</h3>
+<ul>
+	
+	<li>
+	  expr: The search expression, a regular string
+	</li>
+	
+	<li>
+	  min_word_count: The minimum number of words a token to be used in the has table search must contain, defaults to -1 (no limit); 0 also does nothing
+	</li>
+	
+	<li>
+	  fs_threshold: The minimum number of results expected from the hash table search. If the number of results is below this threshold, an additional full-text search will commence
+	</li>
+	
+	<li>
+	  fs_function: The string-matching strategy to be used in the full text search. Valid values are "startswith", "endswith" and "count" (from the Penlight stringx library).
+	</li>
+	
+</ul>
+
+
+
+
+
+
+<h3>Return value:</h3>
+A list of anime IDs (integers) that match the search expression. In the case of an internal error, false is being returned. In the case that there was no match, an empty list is being returned.
+
+
+
+</dd>
+
+
+</dl>
 
 
 
