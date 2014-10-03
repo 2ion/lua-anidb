@@ -83,7 +83,7 @@
     </tr>
 
     <tr>
-    <td class="name" nowrap><a href="#api:init_home">api:init_home</a>&nbsp;(catalog_dir)</td>
+    <td class="name" nowrap><a href="#api:init_home">api:init_home</a>&nbsp;(cachedir)</td>
     <td class="summary">Ensure that the cache directory exists and set up internal file name variables accordingly.</td>
     </tr>
 
@@ -183,7 +183,7 @@ true on success, false on failure
 
 
 
-<dt><a name="api:init_home"></a><strong>api:init_home</strong>&nbsp;(catalog_dir)</dt>
+<dt><a name="api:init_home"></a><strong>api:init_home</strong>&nbsp;(cachedir)</dt>
 <dd>
 Ensure that the cache directory exists and set up internal file name variables accordingly. Called by api:init(), do not call directly.
 
@@ -192,7 +192,7 @@ Ensure that the cache directory exists and set up internal file name variables a
 <ul>
 	
 	<li>
-	  catalog_dir: 
+	  cachedir: The cache directory/data prefix
 	</li>
 	
 </ul>
