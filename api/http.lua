@@ -8,6 +8,7 @@
 local file = require 'pl.file'
 local http = require 'socket.http'
 local list = require 'pl.List'
+local lxp = require 'lxp'
 local posix = require 'posix'
 local pretty = require 'pl.pretty'
 local stringx = require 'pl.stringx'
@@ -37,6 +38,7 @@ local api = setmetatable({
     return self
   end
 })
+local XMLElement = {}
 
 local function ifnot(v)
   if v then return v
@@ -108,6 +110,29 @@ end
 local function read_table(file)
   if not posix.access(file) then return nil end
   return pretty.read(read_zipfile(file))
+end
+
+function XMLElement.new(parent, name, attr)
+  local o = { children = {}, name = name, attr = attr, parent = parent }
+  setmetatable(o, { __index = XMLElement})
+  if parent and parent.children then
+    table.insert(parent.children, o)
+  end
+  return o
+end
+
+function XMLElement:addchild(e)
+  table.insert(self.children, e)
+  return self
+end
+
+function XMLElement:settext(s)
+  self.text = s
+  return self
+end
+
+function XMLElement:parent(root)
+  return self.parent or root
 end
 
 function api:log(...)
@@ -290,37 +315,72 @@ function api:search(expr, min_word_count, fs_threshold, fs_function)
 end
 
 function api:info(aid)
-  local b = nil
   local now = posix.clock_gettime("realtime")
+
   if self.cache[aid] then
     if self.cache[aid].info
-      and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
+    and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
       return self.cache[aid].info
-      end
+    end
   else
     self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
   end
+
   if (now-self.cache[aid].reqtime) >= 86400 then
     self.cache[aid].reqcnt = 0
   end
-  if not self.cache[aid].xml
-    or self.cache[aid].reqcnt < self._ANIDB_REQUEST_LIMIT
-    or self._FORCE_REQUESTS then self:log("info(): requesting XML for aid "..aid)
+
+  if (not self.cache[aid].xml and self.cache[aid].reqcnt < self._ANIDB_REQUEST_LIMIT)
+  or self._FORCE_REQUESTS then self:log("info(): requesting XML for aid "..aid)
     local zd = http.request(self:info_request_url(aid))
     self.cache[aid].xml = zlib.inflate()(zd)
     self.cache[aid].reqtime = now
     self.cache[aid].reqcnt = self.cache[aid].reqcnt + 1
   end
-  if not b then self:log("info(): failed to retrieve XML data")
+
+  if not self.cache[aid].xml then self:log("info(): failed to retrieve XML data")
     return nil
   end
 
-  return {}
+  self.cache[aid].info = self:parse_info_xml(self.cache[aid].xml)
+
+  return self.cache[aid].info
 end
 
 function api:info_request_url(aid)
   return string.format(self._ANIDB_DATA_REQUEST, url.escape(self._ANIDB_CLIENT),
     url.escape(self._ANIDB_CLIENTVER), url.escape(self._ANIDB_PROTOVER), aid)
+end
+
+function api:parse_info_xml(xml)
+  local root = XMLElement.new()
+  local cur = root
+  function lxp_StartElement(p, e, attr)
+    cur = XMLElement.new(p, e, attr)
+  end
+  function lxp_EndElement(p, e)
+    cur = cur.parent or root
+  end
+  function lxp_DefaultExpand(p, s)
+    cur.text = s
+  end
+  local p = lxp.new{
+    StartElement = lxp_StartElement,
+    EndElement = lxp_EndElement,
+    DefaultExpand = lxp_DefaultExpand
+  }
+  p:setencoding("UTF-8")
+  local done = false
+  local stat, msg, line, col, pos = p:parse(xml)
+  if not stat then
+    self:log("parse_info_xml(): XML parser failed: %s @ %d:%d (%d)",
+      msg, line, col, pos)
+    return nil
+  else
+    self:log("parse_info_xml(): XML parser finished successfully")
+  end
+  p:close()
+  return root
 end
 
 return api
