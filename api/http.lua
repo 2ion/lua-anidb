@@ -1,6 +1,6 @@
 #!/usr/bin/env lua5.2
 
---- AniDB.net HTTP API client library
+-- AniDB.net HTTP API client library
 -- Copyright (C) 2014 Jens Oliver John
 -- Licensed under the GNU General Public License v3 or later.
 -- See the file LICENSE for details.
@@ -163,21 +163,22 @@ end
 
 --- Ensure that the cache directory exists and set up internal file name
 -- variables accordingly. Called by api:init(), do not call directly.
-function api:init_home(catalog_dir)
-  assert(catalog_dir)
-  self.catalog_dir = catalog_dir
-  if not posix.access(self.catalog_dir) then
-    posix.mkdir(self.catalog_dir)
-    if not posix.access(self.catalog_dir) then
+-- @param cachedir The cache directory/data prefix
+function api:init_home(cachedir)
+  assert(cachedir)
+  self.cachedir = cachedir
+  if not posix.access(self.cachedir) then
+    posix.mkdir(self.cachedir)
+    if not posix.access(self.cachedir) then
       self:log("Could not create catalog directory.")
       return false
     end
   end
-  self.catalog_file = self.catalog_dir.."/anime-titles.dat.gz"
-  self.catalog_data = self.catalog_dir.."/catalog.lua.gz"
-  self.catalog_index_data = self.catalog_dir.."/catalog_index.lua.gz"
-  self.catalog_hash_data = self.catalog_dir.."/catalog_hasht.lua.gz"
-  self.cache_data = self.catalog_dir.."/data.lua.gz"
+  self.catalog_file = self.cachedir.."/anime-titles.dat.gz"
+  self.catalog_data = self.cachedir.."/catalog.lua.gz"
+  self.catalog_index_data = self.cachedir.."/catalog_index.lua.gz"
+  self.catalog_hash_data = self.cachedir.."/catalog_hasht.lua.gz"
+  self.cache_data = self.cachedir.."/data.lua.gz"
   return true
 end
 
