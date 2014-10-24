@@ -426,7 +426,6 @@ function api:info_parse_xml(s)
       if type(tv) == "string" and tv == "\n" then
         return nil
       elseif type(tv) == "table" then
-        print 'table'
         return filter_blanks(tv)
       end
       return tv
