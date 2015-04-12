@@ -1,6 +1,77 @@
 ## lua-anidb
 
-HTTP and UDP client libraries for AniDB.net.
+HTTP and UDP client libraries for AniDB.net. <code>anic</code> is a
+command line interface to the HTTP library which can be used for looking
+up information on AniDB.
+
+### anic
+
+<code>anic</code> is query program that uses my HTTP client library. It
+outputs title, episodes, ratings, and similar anime to a terminal.
+Percentages and scores as well as other aspects may be color coded, so
+you require a terminal or terminal emulator supporting ANSI color escape
+sequences in order to use it.
+
+The synposis is as follows:
+
+```
+Usage:
+  ./anic OPTIONS
+Options:
+  -h, --help               Show this message and exit
+  -a, --aid                AID. Search for an anime by its anime ID
+  -s, --search             TERM. Search in anime titles for TERM, and
+                           print the result
+  -W, --word-count         INT. Modifies --search. Require at least INT
+                           sequential words in TERM to match
+  -T, --results-threshold  INT. If we do not find at least INT matches
+                           using a token-based title search, commence an
+                           expensive full text search
+  -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
+                           or 'count'. Method used for the full-text search
+  -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
+                           Specifies the language titles are displayed in
+  -D, --debug              Print client library log messages
+```
+
+Some usage examples -- be sure to understand them!
+
+```sh
+# Search for the anime Noir by title
+
+$ anic -s Noir 
+
+# Search for the anime Princess Mononoke using a multibyte-encoded
+# search string. The -W1 tells the library to perform a fulltext search.
+# A regular search won't (yet) return any matches since the library
+# doesn't know how to split the string into single tokens. This will be
+# supported with Lua 5.3 soon :)
+
+$ anic -s 'もののけ姫' -T1
+
+# Search for the anime Noir, but print titles and such in Japanese (when
+# available)
+
+$ anic -s Noir -L ja
+
+# Search for the anime Noir with the anime ID (AID) 13. In the program output
+# regarding related anime and other sections, you find the AIDs of the
+# anime. Searching anime by AID saves us the catalog lookup.
+
+$ anic -a 13 -L ja
+```
+
+#### Caveats
+
+Due to the library needing to load the entire catalog into memory when
+it initializes, depending on the speed of your system, the output might
+get delayed by about 1 second.
+
+All data coming from AniDB in XML format will be converted to Lua
+tables. When first downloading the catalog, and again once every 24h
+when the local catalog is being updated, you might need to wait 1 minute
+for both the download and the processing to finish -- since the API
+server is quite slow, most of this time is spent waiting for data.
 
 ### HTTP API library
 

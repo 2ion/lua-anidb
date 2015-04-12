@@ -22,8 +22,9 @@ local function log(...)
 end
 
 
-for o, optarg, opterr in posix.getopt(arg, "hs:W:T:M:L:D", {
+for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:D", {
   { "help",               "none",     'h' },
+  { "aid",                "required", 'a' },
   { "search",             "required", 's' },
   { "word-count",         "required", 'W' },
   { "results-threshold",  "required", 'T' },
@@ -34,22 +35,29 @@ for o, optarg, opterr in posix.getopt(arg, "hs:W:T:M:L:D", {
     printf("Invalid option or missing argument: %s", arg[opterr-1])
     return 1
   elseif o == 'h' then
-    printf([[Usage: %s OPTION
-Where: -h, --help               Show this message and exit
-       -s, --search             TERM. Search in anime titles for TERM, and
-                                print the result
-       -W, --word-count         INT. Modifies --search. Require at least INT
-                                sequential words in TERM to match
-       -T, --results-threshold  INT. If we do not find at least INT matches
-                                using a token-based title search, commence an
-                                expensive full text search
-       -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
-                                or 'count'. Method used for the full-text search
-       -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
-                                Specifies the language titles are displayed in
-       -D, --debug              Print client library log messages]], arg[0])
+    printf([[
+Usage:
+  %s OPTIONS
+Options:
+  -h, --help               Show this message and exit
+  -a, --aid                AID. Search for an anime by its anime ID
+  -s, --search             TERM. Search in anime titles for TERM, and
+                           print the result
+  -W, --word-count         INT. Modifies --search. Require at least INT
+                           sequential words in TERM to match
+  -T, --results-threshold  INT. If we do not find at least INT matches
+                           using a token-based title search, commence an
+                           expensive full text search
+  -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
+                           or 'count'. Method used for the full-text search
+  -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
+                           Specifies the language titles are displayed in
+  -D, --debug              Print client library log messages]], arg[0])
+  os.exit(0)
   elseif o == 's' then
     table.insert(search_terms, optarg)
+  elseif o == 'a' then
+    table.insert(search_terms, tonumber(optarg))
   elseif o == 'W' then
     search_min_word_count = tonumber(optarg)
   elseif o == 'T' then
@@ -71,12 +79,18 @@ end
 anidb._DEBUG = debug
 
 for _,term in ipairs(search_terms) do
-  local i = anidb:search(term, search_min_word_count, search_fulltext_thresold, search_fulltext_function)
+  local i = true
+  if type(term) == "number" then
+    i = { term }
+  else
+    i = anidb:search(term, search_min_word_count, search_fulltext_thresold, search_fulltext_function)
+  end
   if not i then
     printf("No match for search term: %s", term)
   else
     log("Matches: %d", #i)
     for _,aid in ipairs(i) do
+      log("Calling info() on aid %d", aid)
       local a = anidb:info(aid)
       anidb:pretty(a, pretty_language)
       if debug then
