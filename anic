@@ -1,0 +1,86 @@
+#!/usr/bin/env lua
+
+local anidb = require 'api.http'
+local posix = require 'posix'
+
+-- Default options
+
+local function printf(...)
+  print(string.format(...))
+end
+
+local function log(...)
+  if debug then printf(...) end
+end
+
+local search_min_word_count = -1
+local search_fulltext_thresold = -1
+local search_fulltext_function = "startswith"
+local pretty_language = "en"
+local debug = false
+
+local search_terms = {}
+
+for o, optarg, opterr in posix.getopt(arg, "hs:W:T:M:L:D", {
+  { "help",               "none",     'h' },
+  { "search",             "required", 's' },
+  { "word-count",         "required", 'W' },
+  { "results-threshold",  "required", 'T' },
+  { "search-method",      "required", 'M' },
+  { "language",           "required", 'L' },
+  { "debug",              "none",     'D' }}) do
+  if o == '?' then
+    printf("Invalid option or missing argument: %s", arg[opterr-1])
+    return 1
+  elseif o == 'h' then
+    printf([[Usage: %s OPTION
+Where: -h, --help               Show this message and exit
+       -s, --search             TERM. Search in anime titles for TERM, and
+                                print the result
+       -W, --word-count         INT. Modifies --search. Require at least INT
+                                sequential words in TERM to match
+       -T, --results-threshold  INT. If we do not find at least INT matches
+                                using a token-based title search, commence an
+                                expensive full text search
+       -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
+                                or 'count'. Method used for the full-text search
+       -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
+                                Specifies the language titles are displayed in
+       -D, --debug              Print client library log messages]], arg[0])
+  elseif o == 's' then
+    table.insert(search_terms, optarg)
+  elseif o == 'W' then
+    search_min_word_count = tonumber(optarg)
+  elseif o == 'T' then
+    search_fulltext_thresold = tonumber(optarg)
+  elseif o == 'M' then
+    search_fulltext_function = optarg
+  elseif o == 'L' then
+    pretty_language = optarg
+  elseif o == 'D' then
+    debug = true
+  end
+end
+
+if not anidb:init() then
+  printf("Failed to initialize the client library! Try running with --debug.")
+  os.exit(1)
+end
+
+anidb._DEBUG = debug
+
+for _,term in ipairs(search_terms) do
+  local i = anidb:search(term, search_min_word_count, search_fulltext_thresold, search_fulltext_function)
+  if not i then
+    printf("No match for search term: %s", term)
+  else
+    for _,aid in ipairs(i) do
+      local a = anidb:info(aid)
+      anidb:pretty(a, pretty_language)
+    end
+  end
+end
+
+anidb:exit()
+
+os.exit(0)

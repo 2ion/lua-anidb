@@ -23,6 +23,7 @@ local api = setmetatable({
   _HOMEPAGE = "https://github.com/2ion/lua-anidb",
   _LICENSE = "GPL3",
   _CATALOG = "http://anidb.net/api/anime-titles.dat.gz",
+  _ANSICOLORS = false,
   _ANIDB_CLIENT = "httpanidb",
   _ANIDB_CLIENTVER = "0",
   _ANIDB_PROTOVER = "1",
@@ -468,7 +469,7 @@ function api:info_collect(t)
       --            float                           integer
       permanent = { val = tonumber(i.permanent[1]), count = tonumber(i.permanent.attr.count) },
       temporary = { val = tonumber(i.temporary[1]), count = tonumber(i.temporary.attr.count) },
-      review =    { val = tonumber(i.review[1]),    count = tonumber(i.review.attr.count)    }
+      review    = { val = tonumber(i.review[1]),    count = tonumber(i.review.attr.count)    }
     }
   end
 
@@ -508,7 +509,6 @@ function api:info_collect(t)
       local key = i.epno[1] -- may be alphanumeric
 
       local function collect_ep_titles(t)
-        pretty.dump(t)
         local s = {}
         s.ja = t[1]
         tablex.foreachi(t, function (e)
@@ -550,6 +550,23 @@ end
 function api:pretty(info, lang)
   if not info._DATA then return nil end
 
+  local function xansicolors(s)
+    if self._ANSICOLORS then
+      return ansicolors(s)
+    end
+    return s
+  end
+
+  local function colorcode_rating(score)
+    if score >= 7.5 then
+      return "%{green}"
+    elseif score >= 5.0 then
+      return "%{yellow}"
+    else
+      return "%{red}"
+    end
+  end
+
   local function sprint(s, ...)
     return string.format(ansicolors(s), ...)
   end
@@ -568,15 +585,18 @@ function api:pretty(info, lang)
   end
 
   local lang = lang or "ja"
+  local c_perm = colorcode_rating(info._DATA.ratings.permanent.val)
+  local c_temp = colorcode_rating(info._DATA.ratings.temporary.val)
+  local c_review = colorcode_rating(info._DATA.ratings.review.val)
 
-  print(string.format([[
-Title         %s (%d)
+  print(sprint([[
+Title         %{bright yellow}%s%{reset} (%{red}%d%{reset})
 Episodes      %d
-Airtime       %s -- %s
+Airtime       %s ~ %s
 Rating
-  Permanent   %.2f (%d)
-  Temporary   %.2f (%d)
-  Review      %.2f (%d)
+  Permanent   ]]..c_perm..[[%.2f%{reset} (%d)
+  Temporary   ]]..c_temp..[[%.2f%{reset} (%d)
+  Review      ]]..c_review..[[%.2f%{reset} (%d)
 Episodes]],
   info._DATA.titles[lang], info._DATA.aid,
   info._DATA.episodecount,
@@ -587,6 +607,7 @@ Episodes]],
 
   local eps = {}
   local max_idx_len = 0
+
   for k,v in pairs(info._DATA.episodes) do
     local kk = k
     if tonumber(k) ~= nil and tonumber(k) < 10 then
@@ -597,7 +618,9 @@ Episodes]],
       max_idx_len = #k
     end
   end
+
   table.sort(eps, function (a, b) return a.i < b.i end)
+
   for k,v in ipairs(eps) do
     local function pad(s, len)
       local s = s
@@ -607,7 +630,7 @@ Episodes]],
       return s
     end
     if v.title then
-      print(string.format("  %s %s", pad(v.i, max_idx_len), v.title))
+      print(sprint("  %s %s", pad(v.i, max_idx_len), v.title))
     end
   end
 
