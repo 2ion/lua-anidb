@@ -554,6 +554,19 @@ function api:pretty(info, lang)
     return string.format(ansicolors(s), ...)
   end
 
+  local function find_nonempty_title(t, lang)
+    if t[lang] then
+      return t[lang]
+    elseif t.ja then
+      return t.ja
+    else
+      for k,v in pairs(t) do
+        return v
+      end
+    end
+    return "<empty>" -- not reached
+  end
+
   local lang = lang or "ja"
 
   print(string.format([[
@@ -579,7 +592,7 @@ Episodes]],
     if tonumber(k) ~= nil and tonumber(k) < 10 then
       kk = "0"..k
     end
-    table.insert(eps, { i = kk, title = v.titles[lang] or "<empty>", len = v.length })
+    table.insert(eps, { i = kk, title = find_nonempty_title(v.titles, lang), len = v.length })
     if #k > max_idx_len then
       max_idx_len = #k
     end
