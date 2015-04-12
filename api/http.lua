@@ -506,8 +506,11 @@ function api:info_collect(t)
     tablex.foreachi(v, function (vv)
       local i = index(vv)
       local key = i.epno[1] -- may be alphanumeric
+
       local function collect_ep_titles(t)
+        pretty.dump(t)
         local s = {}
+        s.ja = t[1]
         tablex.foreachi(t, function (e)
           if e.attr then
             s[e.attr["xml:lang"]] = e[1]
@@ -515,6 +518,7 @@ function api:info_collect(t)
         end)
         return s
       end
+
       r[key] = {
         length = tonumber(i.length[1]),
         titles = collect_ep_titles(i.title),
@@ -550,7 +554,7 @@ function api:pretty(info, lang)
     return string.format(ansicolors(s), ...)
   end
 
-  local lang = lang or "en"
+  local lang = lang or "ja"
 
   print(string.format([[
 Title         %s (%d)
