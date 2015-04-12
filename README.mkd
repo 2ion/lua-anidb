@@ -73,6 +73,12 @@ when the local catalog is being updated, you might need to wait 1 minute
 for both the download and the processing to finish -- since the API
 server is quite slow, most of this time is spent waiting for data.
 
+#### Sample outputs
+
+![UsageExample1](https://raw.githubusercontent.com/2ion/lua-anidb/gh-pages/example1.png)
+
+![UsageExample2](https://raw.githubusercontent.com/2ion/lua-anidb/gh-pages/example2.png)
+
 ### HTTP API library
 
 * Implements the AniDB.net HTTP API, exposing data retrieval
