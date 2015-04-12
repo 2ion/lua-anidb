@@ -1,5 +1,7 @@
 #!/usr/bin/env lua
 
+package.path = package.path .. ';./api/?.lua'
+
 local anidb = require 'api.http'
 local posix = require 'posix'
 
