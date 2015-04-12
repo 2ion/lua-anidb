@@ -22,7 +22,7 @@ prepare(){
   cd "$srcdir/${pkgname%-git}"
   cat > _anic <<EOF
 #!/bin/sh
-/usr/bin/env lua /usr/share/lua/5.2/anidb/anic
+/usr/bin/env lua /usr/share/lua/5.2/anidb/anic "$@"
 EOF
 }
 
