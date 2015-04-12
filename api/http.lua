@@ -5,6 +5,7 @@
 -- Licensed under the GNU General Public License v3 or later.
 -- See the file LICENSE for details.
 
+local ansicolors = require 'ansicolors'
 local file = require 'pl.file'
 local http = require 'socket.http'
 local list = require 'pl.List'
@@ -540,6 +541,59 @@ function api:info_collect(t)
   }
   
   return t
+end
+
+function api:pretty(info, lang)
+  if not info._DATA then return nil end
+
+  local function sprint(s, ...)
+    return string.format(ansicolors(s), ...)
+  end
+
+  local lang = lang or "en"
+
+  print(string.format([[
+Title         %s (%d)
+Episodes      %d
+Airtime       %s -- %s
+Rating
+  Permanent   %.2f (%d)
+  Temporary   %.2f (%d)
+  Review      %.2f (%d)
+Episodes]],
+  info._DATA.titles[lang], info._DATA.aid,
+  info._DATA.episodecount,
+  info._DATA.startdate, info._DATA.enddate,
+  info._DATA.ratings.permanent.val, info._DATA.ratings.permanent.count,
+  info._DATA.ratings.temporary.val, info._DATA.ratings.temporary.count,
+  info._DATA.ratings.review.val, info._DATA.ratings.review.count))
+
+  local eps = {}
+  local max_idx_len = 0
+  for k,v in pairs(info._DATA.episodes) do
+    local kk = k
+    if tonumber(k) ~= nil and tonumber(k) < 10 then
+      kk = "0"..k
+    end
+    table.insert(eps, { i = kk, title = v.titles[lang] or "<empty>", len = v.length })
+    if #k > max_idx_len then
+      max_idx_len = #k
+    end
+  end
+  table.sort(eps, function (a, b) return a.i < b.i end)
+  for k,v in ipairs(eps) do
+    local function pad(s, len)
+      local s = s
+      for i=len-#s,0,-1 do
+        s = " "..s
+      end
+      return s
+    end
+    if v.title then
+      print(string.format("  %s %s", pad(v.i, max_idx_len), v.title))
+    end
+  end
+
 end
 
 return api
