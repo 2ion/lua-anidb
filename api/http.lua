@@ -393,10 +393,9 @@ function api:info(aid)
     and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
       self:log("info(): returning cached data for aid %d", aid)
       if self._DEBUG == true then -- filter even processed data
-        return self:info_collect(self.cache[aid].info)
-      else
-        return self.cache[aid].info
+        self.cache[aid].info = self:info_collect(self.cache[aid].info)
       end
+      return self.cache[aid].info
     end
   else
     self.cache[aid] = { reqtime = 0, reqcnt = 0 }
@@ -545,7 +544,9 @@ function api:info_collect(t)
     episodes      = collect_episodes(i.episodes),
     startdate     = i.startdate[1],
     enddate       = i.enddate[1],
-    ratings       = collect_ratings(i.ratings)
+    ratings       = collect_ratings(i.ratings),
+    image         = "http://img7.anidb.net/pics/anime/"..i.picture[1],
+    url           = "http://anidb.net/perl-bin/animedb.pl?show=anime&aid="..t.attr.id
   }
 
   return t
@@ -634,7 +635,15 @@ Similar anime]],
     print(sprint("  "..colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
   end
 
+  -- Picture URL
+  print(sprint([[
+URL           %s
+Picture       %s]],
+  info._DATA.url,
+  info._DATA.image))
+
   -- Display episodes
+
 print([[Episodes]])
 
   local eps = {}
