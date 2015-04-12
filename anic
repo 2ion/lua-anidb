@@ -5,6 +5,14 @@ local posix = require 'posix'
 
 -- Default options
 
+local search_min_word_count = -1
+local search_fulltext_thresold = -1
+local search_fulltext_function = "startswith"
+local pretty_language = "en"
+local debug = false
+
+local search_terms = {}
+
 local function printf(...)
   print(string.format(...))
 end
@@ -13,13 +21,6 @@ local function log(...)
   if debug then printf(...) end
 end
 
-local search_min_word_count = -1
-local search_fulltext_thresold = -1
-local search_fulltext_function = "startswith"
-local pretty_language = "en"
-local debug = false
-
-local search_terms = {}
 
 for o, optarg, opterr in posix.getopt(arg, "hs:W:T:M:L:D", {
   { "help",               "none",     'h' },
@@ -74,9 +75,13 @@ for _,term in ipairs(search_terms) do
   if not i then
     printf("No match for search term: %s", term)
   else
+    log("Matches: %d", #i)
     for _,aid in ipairs(i) do
       local a = anidb:info(aid)
       anidb:pretty(a, pretty_language)
+      if debug then
+        anidb:debug_dump(a)
+      end
     end
   end
 end

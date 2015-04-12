@@ -36,7 +36,7 @@ local api = setmetatable({
   _MAX_INFO_AGE = 86400
 }, {
   __index = api,
-  __call = function (self) 
+  __call = function (self)
     print(string.format("AniDB.net HTTP API client library\nVersion: %s", self._VERSION))
     return self
   end
@@ -148,6 +148,10 @@ function api:log(...)
   end
 end
 
+function api:debug_dump(t)
+  pretty.dump(t)
+end
+
 --- Initialize the library. This function must be called before any
 -- other library function.
 -- @param cachedir The working directory to write cache data to.
@@ -201,7 +205,7 @@ function api:init_catalog()
     posix.unlink(self.catalog_file)
     return false
   end
-  if not posix.access(self.catalog_file) or 
+  if not posix.access(self.catalog_file) or
     (posix.access(self.catalog_file) and
       get_lastmod_timediff(self.catalog_file)>=self._MAX_CATALOG_AGE) then self:log("init_catalog: Requesting a new catalog")
     do_reparse = true
@@ -387,15 +391,15 @@ function api:info(aid)
   if self.cache[aid] then
     if self.cache[aid].info
     and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
-      self:log("info(): returning cached data for aid %d", aid) 
+      self:log("info(): returning cached data for aid %d", aid)
       if self._DEBUG == true then -- filter even processed data
         return self:info_collect(self.cache[aid].info)
-      else 
+      else
         return self.cache[aid].info
       end
     end
   else
-    self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
+    self.cache[aid] = { reqtime = 0, reqcnt = 0 }
   end
 
   if (now-self.cache[aid].reqtime) >= 86400 then
@@ -466,10 +470,9 @@ function api:info_collect(t)
   local function collect_ratings(v)
     local i = index(v)
     return {
-      --            float                           integer
-      permanent = { val = tonumber(i.permanent[1]), count = tonumber(i.permanent.attr.count) },
-      temporary = { val = tonumber(i.temporary[1]), count = tonumber(i.temporary.attr.count) },
-      review    = { val = tonumber(i.review[1]),    count = tonumber(i.review.attr.count)    }
+      permanent = { val = tonumber(i.permanent and i.permanent[1] or 0),  count = tonumber(i.permanent and i.permanent.attr.count or 0) },
+      temporary = { val = tonumber(i.temporary and i.temporary[1] or 0),  count = tonumber(i.temporary and i.temporary.attr.count or 0) },
+      review    = { val = tonumber(i.review    and i.review[1]    or 0),  count = tonumber(i.review and i.review.attr.count       or 0) }
     }
   end
 
@@ -478,7 +481,7 @@ function api:info_collect(t)
     local r = {}
     if type(i.title) == 'table' then
       tablex.foreach(i.title, function (vv)
-        if vv.attr and vv.attr.type == "official" then
+        if vv.attr and (vv.attr.type == "official" or vv.attr.type == "main") then
           r[vv.attr["xml:lang"]] = vv[1]
         end
       end)
@@ -488,6 +491,7 @@ function api:info_collect(t)
 
   local function collect_similar_anime(v)
     local r = {}
+    if not v then return r end
     tablex.foreachi(v, function (vv)
       local k = vv[1]
       r[k] = {
@@ -543,7 +547,7 @@ function api:info_collect(t)
     enddate       = i.enddate[1],
     ratings       = collect_ratings(i.ratings)
   }
-  
+
   return t
 end
 
@@ -567,17 +571,29 @@ function api:pretty(info, lang)
     end
   end
 
+  local function colorcode_percentage(score)
+    local p = score<100.0 and " " or ""
+    if score>=75.0 then
+      return p.."%{green}"
+    elseif score>=50.0 then
+      return p.."%{yellow}"
+    else
+      return p.."%{red}"
+    end
+  end
+
   local function sprint(s, ...)
     return string.format(ansicolors(s), ...)
   end
 
   local function find_nonempty_title(t, lang)
-    if t[lang] then
+    if t[lang] then self:log("find_nonempty_title(): no title in language %s", lang)
       return t[lang]
-    elseif t.ja then
+    elseif t.ja then self:log("find_nonempty_title(): substituting Japanese title: %s", t.ja)
       return t.ja
     else
       for k,v in pairs(t) do
+        self:log("find_nonempty_title(): substituting title %s (%s), k, v")
         return v
       end
     end
@@ -590,20 +606,36 @@ function api:pretty(info, lang)
   local c_review = colorcode_rating(info._DATA.ratings.review.val)
 
   print(sprint([[
-Title         %{bright yellow}%s%{reset} (%{red}%d%{reset})
+Title         %{bright yellow underline}%s%{reset} (%{blue}%d%{reset})
+Type          %s
 Episodes      %d
 Airtime       %s ~ %s
 Rating
   Permanent   ]]..c_perm..[[%.2f%{reset} (%d)
   Temporary   ]]..c_temp..[[%.2f%{reset} (%d)
   Review      ]]..c_review..[[%.2f%{reset} (%d)
-Episodes]],
-  info._DATA.titles[lang], info._DATA.aid,
+Similar anime]],
+  find_nonempty_title(info._DATA.titles, lang), info._DATA.aid,
+  info._DATA.type,
   info._DATA.episodecount,
   info._DATA.startdate, info._DATA.enddate,
   info._DATA.ratings.permanent.val, info._DATA.ratings.permanent.count,
   info._DATA.ratings.temporary.val, info._DATA.ratings.temporary.count,
   info._DATA.ratings.review.val, info._DATA.ratings.review.count))
+
+  -- Display similar anime
+
+  local sa = {}
+  for title,v in pairs(info._DATA.similaranime) do
+    table.insert(sa, { t = title, approval_percentage = v.approval_rate*100, data = v })
+  end
+  table.sort(sa, function (a, b) return a.data.approval_rate > b.data.approval_rate end)
+  for _,v in ipairs(sa) do
+    print(sprint("  "..colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
+  end
+
+  -- Display episodes
+print([[Episodes]])
 
   local eps = {}
   local max_idx_len = 0
