@@ -385,7 +385,12 @@ function api:info(aid)
   if self.cache[aid] then
     if self.cache[aid].info
     and (now-self.cache[aid].reqtime) < self._MAX_INFO_AGE then
-      return self.cache[aid].info
+      self:log("info(): returning cached data for aid %d", aid) 
+      if self._DEBUG == true then -- filter even processed data
+        return self:info_collect(self.cache[aid].info)
+      else 
+        return self.cache[aid].info
+      end
     end
   else
     self.cache[aid] = { reqtime = 0, reqcnt = 0 } 
@@ -412,6 +417,10 @@ function api:info(aid)
     self:log("info(): Failed to parse the XML: No information available")
   end
 
+  self:log("info(): running info_collect()")
+  self.cache[aid].info = self:info_collect(self.cache[aid].info)
+
+  self:log("info(): finished")
   return self.cache[aid].info
 end
 
@@ -434,6 +443,103 @@ function api:info_parse_xml(s)
   local x = xml.parse(s, false, false)
   x = filter_blanks(x)
   return x
+end
+
+function api:info_collect(t)
+
+  local function index(t)
+    local i = {}
+    tablex.foreachi(t, function (v)
+      if i[v.tag] and type(i[v.tag]) == 'table' then
+        table.insert(i[v.tag], v)
+      elseif i[v.tag] then
+        i[v.tag] = { i[v.tag], v }
+      else
+        i[v.tag] = v
+      end
+    end)
+    return i
+  end
+
+  local function collect_ratings(v)
+    local i = index(v)
+    return {
+      --            float                           integer
+      permanent = { val = tonumber(i.permanent[1]), count = tonumber(i.permanent.attr.count) },
+      temporary = { val = tonumber(i.temporary[1]), count = tonumber(i.temporary.attr.count) },
+      review =    { val = tonumber(i.review[1]),    count = tonumber(i.review.attr.count)    }
+    }
+  end
+
+  local function collect_official_titles(v)
+    local i = index(v)
+    local r = {}
+    if type(i.title) == 'table' then
+      tablex.foreach(i.title, function (vv)
+        if vv.attr and vv.attr.type == "official" then
+          r[vv.attr["xml:lang"]] = vv[1]
+        end
+      end)
+    end
+    return r
+  end
+
+  local function collect_similar_anime(v)
+    local r = {}
+    tablex.foreachi(v, function (vv)
+      local k = vv[1]
+      r[k] = {
+        aid = tonumber(vv.attr.id),
+        type = vv.attr.type,
+        total_votes = tonumber(vv.attr.total),
+        approving_votes = tonumber(vv.attr.approval)
+      }
+      r[k].approval_rate = r[k].approving_votes/r[k].total_votes
+    end)
+    return r
+  end
+
+  local function collect_episodes(v)
+    local r = {}
+
+    tablex.foreachi(v, function (vv)
+      local i = index(vv)
+      local key = i.epno[1] -- may be alphanumeric
+      local function collect_ep_titles(t)
+        local s = {}
+        tablex.foreachi(t, function (e)
+          if e.attr then
+            s[e.attr["xml:lang"]] = e[1]
+          end
+        end)
+        return s
+      end
+      r[key] = {
+        length = tonumber(i.length[1]),
+        titles = collect_ep_titles(i.title),
+        airdate = i.airdate and i.airdate[1] or nil
+      }
+    end)
+
+    return r
+  end
+
+  local t = t
+  local i = index(t)
+
+  t._DATA = {
+    type          = i.type[1],
+    aid           = tonumber(t.attr.id),
+    titles        = collect_official_titles(i.titles),
+    similaranime  = collect_similar_anime(i.similaranime),
+    episodecount  = tonumber(i.episodecount[1]),
+    episodes      = collect_episodes(i.episodes),
+    startdate     = i.startdate[1],
+    enddate       = i.enddate[1],
+    ratings       = collect_ratings(i.ratings)
+  }
+  
+  return t
 end
 
 return api
