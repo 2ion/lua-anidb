@@ -655,8 +655,8 @@ print([[Episodes]])
       kk = "0"..k
     end
     table.insert(eps, { i = kk, title = find_nonempty_title(v.titles, lang), len = v.length })
-    if #k > max_idx_len then
-      max_idx_len = #k
+    if #kk > max_idx_len then
+      max_idx_len = #kk
     end
   end
 
