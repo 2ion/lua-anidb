@@ -530,6 +530,13 @@ function api:info_collect(t)
     return r
   end
 
+  local function collect_description(v)
+    local i, j = v:find("Source:", 1, true)
+    if i then
+      return v:sub(1, i-1)
+    end
+  end
+
   local t = t
   local i = index(t)
 
@@ -544,7 +551,8 @@ function api:info_collect(t)
     enddate       = i.enddate[1],
     ratings       = collect_ratings(i.ratings),
     image         = "http://img7.anidb.net/pics/anime/"..i.picture[1],
-    url           = "http://anidb.net/perl-bin/animedb.pl?show=anime&aid="..t.attr.id
+    url           = "http://anidb.net/perl-bin/animedb.pl?show=anime&aid="..t.attr.id,
+    description   = collect_description(i.description[1])
   }
 
   return t
@@ -600,6 +608,9 @@ AniDB.net
   info._DATA.url,
   info._DATA.image))
 
+  print([[Description]])
+  print(string.format("  %s", self:pretty_reflow_text(info._DATA.description)))
+
   -- Display episodes
 
   print([[Episodes]])
@@ -643,6 +654,24 @@ end
 
 function api:pretty_sprint(s, ...)
   return string.format(ansicolors(s), ...)
+end
+
+function api:pretty_reflow_text(s, width)
+  local s = s:gsub("\n", " ")
+  local width = width or os.getenv("COLUMNS") or 72
+  local i = 1
+  while i <= #s do
+    i = i + width
+    local j 
+    if s:sub(i, i) ~= " " then
+      j = s:find(' ', i+1, true)
+    end
+    if j then
+      s = s:sub(1, j-1) .. "\n  " .. s:sub(j+1, -1)
+      i = j + 3
+    end
+  end
+  return s
 end
 
 function api:pretty_episodes(episode_table)
