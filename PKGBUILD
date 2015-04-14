@@ -14,12 +14,12 @@ source=('git+https://github.com/2ion/lua-anidb.git#branch=master')
 md5sums=('SKIP')
 
 pkgver() {
-	cd "$srcdir/${pkgname%-git}"
-	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+  cd "$srcdir/${pkgname%-git}"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 package() {
-	cd "$srcdir/${pkgname%-git}"
+  cd "$srcdir/${pkgname%-git}"
   install -m755 -d "$pkgdir"/usr/share/lua/5.2/anidb/api
   install -Tm755 api/http.lua "$pkgdir"/usr/share/lua/5.2/anidb/api/http.lua
   install -Dm755 anic "$pkgdir"/usr/bin/anic
