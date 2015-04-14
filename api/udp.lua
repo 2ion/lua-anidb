@@ -1,9 +1,7 @@
-#!/usr/bin/env lua5.2
+#!/usr/bin/env lua
 
 -- anidb UDP client library
--- Copyright (C) 2013-2014 Jens Oliver John
--- Licensed under the GNU General Public License v3 or later.
--- See the file LICENSE for details.
+-- Copyright (C) 2013-2015 2ion <dev@2ion.de>
 
 local Socket = require("socket")
 local Stringx = require("pl.stringx")
