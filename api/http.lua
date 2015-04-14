@@ -1,9 +1,7 @@
-#!/usr/bin/env lua5.2
+#!/usr/bin/env lua
 
 -- AniDB.net HTTP API client library
--- Copyright (C) 2014 Jens Oliver John
--- Licensed under the GNU General Public License v3 or later.
--- See the file LICENSE for details.
+-- Copyright (C) 2014-2015 2ion <dev@2ion.de>
 
 local ansicolors = require 'ansicolors'
 local file = require 'pl.file'
