@@ -555,58 +555,12 @@ end
 function api:pretty(info, lang)
   if not info._DATA then return nil end
 
-  local function xansicolors(s)
-    if self._ANSICOLORS then
-      return ansicolors(s)
-    end
-    return s
-  end
-
-  local function colorcode_rating(score)
-    if score >= 7.5 then
-      return "%{green}"
-    elseif score >= 5.0 then
-      return "%{yellow}"
-    else
-      return "%{red}"
-    end
-  end
-
-  local function colorcode_percentage(score)
-    local p = score<100.0 and " " or ""
-    if score>=75.0 then
-      return p.."%{green}"
-    elseif score>=50.0 then
-      return p.."%{yellow}"
-    else
-      return p.."%{red}"
-    end
-  end
-
-  local function sprint(s, ...)
-    return string.format(ansicolors(s), ...)
-  end
-
-  local function find_nonempty_title(t, lang)
-    if t[lang] then self:log("find_nonempty_title(): no title in language %s", lang)
-      return t[lang]
-    elseif t.ja then self:log("find_nonempty_title(): substituting Japanese title: %s", t.ja)
-      return t.ja
-    else
-      for k,v in pairs(t) do
-        self:log("find_nonempty_title(): substituting title %s (%s), k, v")
-        return v
-      end
-    end
-    return "<empty>" -- not reached
-  end
-
   local lang = lang or "ja"
-  local c_perm = colorcode_rating(info._DATA.ratings.permanent.val)
-  local c_temp = colorcode_rating(info._DATA.ratings.temporary.val)
-  local c_review = colorcode_rating(info._DATA.ratings.review.val)
+  local c_perm = self:pretty_colorcode_rating(info._DATA.ratings.permanent.val)
+  local c_temp = self:pretty_colorcode_rating(info._DATA.ratings.temporary.val)
+  local c_review = self:pretty_colorcode_rating(info._DATA.ratings.review.val)
 
-  print(sprint([[
+  print(self:pretty_sprint([[
 Title         %{bright yellow underline}%s%{reset} (%{blue}%d%{reset})
 Type          %s
 Episodes      %d
@@ -616,7 +570,7 @@ Rating
   Temporary   ]]..c_temp..[[%.2f%{reset} (%d)
   Review      ]]..c_review..[[%.2f%{reset} (%d)
 Similar anime]],
-  find_nonempty_title(info._DATA.titles, lang), info._DATA.aid,
+  self:pretty_find_nonempty_title(info._DATA.titles, lang), info._DATA.aid,
   info._DATA.type,
   info._DATA.episodecount,
   info._DATA.startdate, info._DATA.enddate,
@@ -637,11 +591,11 @@ Similar anime]],
   end
   table.sort(sa, function (a, b) return a.data.approval_rate > b.data.approval_rate end)
   for _,v in ipairs(sa) do
-    print(sprint("  "..colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
+    print(self:pretty_sprint("  "..self:pretty_colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
   end
 
   -- Picture URL
-  print(sprint([[
+  print(self:pretty_sprint([[
 AniDB.net
   URL          %s
   Picture      %s]],
@@ -650,13 +604,55 @@ AniDB.net
 
   -- Display episodes
 
-print([[Episodes]])
+  print([[Episodes]])
+  self:pretty_episodes(info._DATA.episodes)
+end
 
+function api:pretty_find_nonempty_title(t, lang)
+  if t[lang] then
+    return t[lang]
+  elseif t.ja then self:log("find_nonempty_title(): substituting Japanese title: %s", t.ja)
+    return t.ja
+  else
+    for k,v in pairs(t) do
+      self:log("find_nonempty_title(): substituting title %s (%s), k, v")
+      return v
+    end
+  end
+  return "<empty>" -- not reached
+end
+
+function api:pretty_colorcode_percentage(score)
+  local p = score<100.0 and " " or ""
+  if score>=75.0 then
+    return p.."%{green}"
+  elseif score>=50.0 then
+    return p.."%{yellow}"
+  else
+    return p.."%{red}"
+  end
+end
+
+function api:pretty_colorcode_rating(score)
+  if score >= 7.5 then
+    return "%{green}"
+  elseif score >= 5.0 then
+    return "%{yellow}"
+  else
+    return "%{red}"
+  end
+end
+
+function api:pretty_sprint(s, ...)
+  return string.format(ansicolors(s), ...)
+end
+
+function api:pretty_episodes(episode_table)
   local eps = {}
   local eps_max_idx = 0
 
-  for k,v in pairs(info._DATA.episodes) do
-    table.insert(eps, { i = tonumber(k) or k, title = find_nonempty_title(v.titles, lang), len = v.length })
+  for k,v in pairs(episode_table) do
+    table.insert(eps, { i = tonumber(k) or k, title = self:pretty_find_nonempty_title(v.titles, lang), len = v.length })
     if #k > eps_max_idx then
       eps_max_idx = #k
     end
@@ -683,10 +679,9 @@ print([[Episodes]])
       return v
     end
     if v.title then
-      print(sprint("  %s%s", pad(v.i), v.title))
+      print(self:pretty_sprint("  %s%s", pad(v.i), v.title))
     end
   end
-
 end
 
 function api:property(info, name)

@@ -11,6 +11,7 @@ local search_fulltext_function = "startswith"
 local pretty_language = "en"
 local debug = false
 local print_mode = "pretty"
+local print_property = "none"
 
 local search_terms = {}
 
@@ -23,7 +24,7 @@ local function log(...)
 end
 
 
-for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip", {
+for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip:", {
   { "help",               "none",     'h' },
   { "aid",                "required", 'a' },
   { "search",             "required", 's' },
@@ -34,7 +35,7 @@ for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip", {
   { "debug",              "none",     'D' },
   { "url",                "none",     'u' },
   { "image",              "none",     'i' },
-  { "pretty",             "none",     'p' }}) do
+  { "property",           "required",  'p' }}) do
   if o == '?' then
     printf("Invalid option or missing argument: %s", arg[opterr-1])
     return 1
@@ -83,7 +84,8 @@ Options:
   elseif o == 'i' then
     print_mode = "image"
   elseif o == 'p' then
-    print_mode = "pretty"
+    print_mode = "property"
+    print_property = optarg
   end
 end
 
@@ -110,10 +112,8 @@ for _,term in ipairs(search_terms) do
       local a = anidb:info(aid)
       if print_mode == "pretty" then
         anidb:pretty(a, pretty_language)
-      elseif print_mode == "image" then
-        print(anidb:property(a, "image"))
-      elseif print_mode == "url" then
-        print(anidb:property(a, "url"))
+      elseif print_mode == "property" then
+        print(anidb:property(a, print_property))
       end
       if debug then
         anidb:debug_dump(a)
