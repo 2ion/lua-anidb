@@ -79,6 +79,8 @@ server is quite slow, most of this time is spent waiting for data.
 
 ![UsageExample2](https://raw.githubusercontent.com/2ion/lua-anidb/gh-pages/example2.png)
 
+![UsageExample3](https://raw.githubusercontent.com/2ion/lua-anidb/gh-pages/example3.png)
+
 ### HTTP API library
 
 * Implements the AniDB.net HTTP API, exposing data retrieval
