@@ -637,8 +637,9 @@ Similar anime]],
 
   -- Picture URL
   print(sprint([[
-URL           %s
-Picture       %s]],
+AniDB.net
+  URL           %s
+  Picture       %s]],
   info._DATA.url,
   info._DATA.image))
 
