@@ -111,9 +111,9 @@ for _,term in ipairs(search_terms) do
       if print_mode == "pretty" then
         anidb:pretty(a, pretty_language)
       elseif print_mode == "image" then
-        print(anidb:image(a))
+        print(anidb:property(a, "image"))
       elseif print_mode == "url" then
-        print(anidb:url(a))
+        print(anidb:property(a, "url"))
       end
       if debug then
         anidb:debug_dump(a)

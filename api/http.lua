@@ -689,13 +689,11 @@ print([[Episodes]])
 
 end
 
-function api:image(info)
-  return info._DATA.image
+function api:property(info, name)
+  if info._DATA[name] then
+    return info._DATA[name]
+  end
+  return nil
 end
-
-function api:url(info)
-  return info._DATA.url
-end
-
 
 return api
