@@ -1,6 +1,6 @@
 #!/usr/bin/env lua
 
-local anidb = require 'anidb.api.http'
+local anidb = require 'api.http'
 local posix = require 'posix'
 
 -- Default options
@@ -34,7 +34,7 @@ for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip", {
   { "debug",              "none",     'D' },
   { "url",                "none",     'u' },
   { "image",              "none",     'i' },
-  { "pretty"              "none",     'p' }}) do
+  { "pretty",             "none",     'p' }}) do
   if o == '?' then
     printf("Invalid option or missing argument: %s", arg[opterr-1])
     return 1
