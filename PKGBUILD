@@ -1,6 +1,6 @@
 # Maintainer: 2ion <dev@2ion.de>
 pkgname=lua-anidb-git
-pkgver=0.1
+pkgver=r79.b54c373
 pkgrel=2
 pkgdesc="Client library and command line client for the AniDB.net HTTP API"
 arch=('any')
