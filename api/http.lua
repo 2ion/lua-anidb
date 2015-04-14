@@ -627,8 +627,13 @@ Similar anime]],
   -- Display similar anime
 
   local sa = {}
+  local sa_max_percentage = 0
   for title,v in pairs(info._DATA.similaranime) do
-    table.insert(sa, { t = title, approval_percentage = v.approval_rate*100, data = v })
+    local p = v.approval_rate * 100
+    table.insert(sa, { t = title, approval_percentage = p, data = v })
+    if p > sa_max_percentage then
+      sa_max_percentage = p
+    end
   end
   table.sort(sa, function (a, b) return a.data.approval_rate > b.data.approval_rate end)
   for _,v in ipairs(sa) do
@@ -638,8 +643,8 @@ Similar anime]],
   -- Picture URL
   print(sprint([[
 AniDB.net
-  URL           %s
-  Picture       %s]],
+  URL          %s
+  Picture      %s]],
   info._DATA.url,
   info._DATA.image))
 
@@ -648,31 +653,37 @@ AniDB.net
 print([[Episodes]])
 
   local eps = {}
-  local max_idx_len = 0
+  local eps_max_idx = 0
 
   for k,v in pairs(info._DATA.episodes) do
-    local kk = k
-    if tonumber(k) ~= nil and tonumber(k) < 10 then
-      kk = "0"..k
-    end
-    table.insert(eps, { i = kk, title = find_nonempty_title(v.titles, lang), len = v.length })
-    if #kk > max_idx_len then
-      max_idx_len = #kk
+    table.insert(eps, { i = tonumber(k) or k, title = find_nonempty_title(v.titles, lang), len = v.length })
+    if #k > eps_max_idx then
+      eps_max_idx = #k
     end
   end
 
-  table.sort(eps, function (a, b) return a.i < b.i end)
+  table.sort(eps, function (a, b)
+    if type(a.i) == "number" and type(b.i) == "number" then
+      return a.i < b.i
+    elseif type(a.i) == "string" and type(b.i) == "string" then
+      return a.i < b.i
+    elseif type(a.i) == "string" then
+      return false
+    else
+      return true
+    end
+  end)
 
   for k,v in ipairs(eps) do
-    local function pad(s, len)
-      local s = s
-      for i=len-#s,0,-1 do
-        s = " "..s
+    local function pad(v)
+      local v = tostring(v)
+      for _=eps_max_idx-#v,0,-1 do
+        v = v .. ' '
       end
-      return s
+      return v
     end
     if v.title then
-      print(sprint("  %s %s", pad(v.i, max_idx_len), v.title))
+      print(sprint("  %s%s", pad(v.i), v.title))
     end
   end
 
