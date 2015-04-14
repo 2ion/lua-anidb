@@ -10,6 +10,7 @@ local search_fulltext_thresold = -1
 local search_fulltext_function = "startswith"
 local pretty_language = "en"
 local debug = false
+local print_mode = "pretty"
 
 local search_terms = {}
 
@@ -22,7 +23,7 @@ local function log(...)
 end
 
 
-for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:D", {
+for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip", {
   { "help",               "none",     'h' },
   { "aid",                "required", 'a' },
   { "search",             "required", 's' },
@@ -30,7 +31,10 @@ for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:D", {
   { "results-threshold",  "required", 'T' },
   { "search-method",      "required", 'M' },
   { "language",           "required", 'L' },
-  { "debug",              "none",     'D' }}) do
+  { "debug",              "none",     'D' },
+  { "url",                "none",     'u' },
+  { "image",              "none",     'i' },
+  { "pretty"              "none",     'p' }}) do
   if o == '?' then
     printf("Invalid option or missing argument: %s", arg[opterr-1])
     return 1
@@ -39,20 +43,26 @@ for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:D", {
 Usage:
   %s OPTIONS
 Options:
-  -h, --help               Show this message and exit
+  -h, --help               Show this message and exit.
   -a, --aid                AID. Search for an anime by its anime ID
   -s, --search             TERM. Search in anime titles for TERM, and
-                           print the result
+                           print the result.
+  -u, --url                Instead of anime information, print the URL
+                           of its AniDB page.
+  -i, --image              Instead of anime information, print the URL
+                           to its AniDB cover image.
+  -p, --pretty             Pretty-print a lot of useful information on
+                           anime. This is the default.
   -W, --word-count         INT. Modifies --search. Require at least INT
-                           sequential words in TERM to match
+                           sequential words in TERM to match.
   -T, --results-threshold  INT. If we do not find at least INT matches
                            using a token-based title search, commence an
-                           expensive full text search
+                           expensive full text search.
   -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
-                           or 'count'. Method used for the full-text search
+                           or 'count'. Method used for the full-text search.
   -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
-                           Specifies the language titles are displayed in
-  -D, --debug              Print client library log messages]], arg[0])
+                           Specifies the language titles are displayed in.
+  -D, --debug              Print client library log messages.]], arg[0])
   os.exit(0)
   elseif o == 's' then
     table.insert(search_terms, optarg)
@@ -68,6 +78,12 @@ Options:
     pretty_language = optarg
   elseif o == 'D' then
     debug = true
+  elseif o == 'u' then
+    print_mode = "url"
+  elseif o == 'i' then
+    print_mode = "image"
+  elseif o == 'p' then
+    print_mode = "pretty"
   end
 end
 
@@ -92,7 +108,13 @@ for _,term in ipairs(search_terms) do
     for _,aid in ipairs(i) do
       log("Calling info() on aid %d", aid)
       local a = anidb:info(aid)
-      anidb:pretty(a, pretty_language)
+      if print_mode == "pretty" then
+        anidb:pretty(a, pretty_language)
+      elseif print_mode == "image" then
+        print(anidb:image(a))
+      elseif print_mode == "url" then
+        print(anidb:url(a))
+      end
       if debug then
         anidb:debug_dump(a)
       end

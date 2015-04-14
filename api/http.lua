@@ -689,4 +689,13 @@ print([[Episodes]])
 
 end
 
+function api:image(info)
+  return info._DATA.image
+end
+
+function api:url(info)
+  return info._DATA.url
+end
+
+
 return api
