@@ -35,11 +35,7 @@ local api = setmetatable({
   _LOGLEVEL = { INFO = 0x0, ERROR = 0x1 },
   _LOGGER = {}
 }, {
-  __index = api,
-  __call = function (self)
-    print(string.format("AniDB.net HTTP API client library\nVersion: %s", self._VERSION))
-    return self
-  end
+  __index = api
 })
 local XMLElement = {}
 
