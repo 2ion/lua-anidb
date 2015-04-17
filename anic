@@ -1,6 +1,6 @@
 #!/usr/bin/env lua
 
-local anidb = require 'anidb.api.http'
+local anidb = require 'api.http'
 local posix = require 'posix'
 
 -- Default options

@@ -31,7 +31,9 @@ local api = setmetatable({
   _FORCE_CATALOG_REPARSE = false,
   _FORCE_REQUESTS = false,
   _MAX_CATALOG_AGE = 86400,
-  _MAX_INFO_AGE = 86400
+  _MAX_INFO_AGE = 86400,
+  _LOGLEVEL = { INFO = 0x0, ERROR = 0x1 },
+  _LOGGER = {}
 }, {
   __index = api,
   __call = function (self)
@@ -146,6 +148,12 @@ function api:log(...)
   end
 end
 
+function api:clog(level, ...)
+  if self._LOGGER[level] then
+    self._LOGGER[level](...)
+  end
+end
+
 function api:debug_dump(t)
   pretty.dump(t)
 end
@@ -156,12 +164,16 @@ end
 -- Defaults to ~/.anidb-http-api if empty.
 -- @ return true on success, false on failure
 function api:init(cachedir)
+  self:log("init()")
+
   if not self:init_home(cachedir or os.getenv("HOME").."/.anidb-http-api") then
     return false
   end
+
   if not self:init_catalog() then
     return false
   end
+
   return true
 end
 
@@ -169,6 +181,7 @@ end
 -- variables accordingly. Called by api:init(), do not call directly.
 -- @param cachedir The cache directory/data prefix
 function api:init_home(cachedir)
+  self:log("init_home")
   assert(cachedir)
   self.cachedir = cachedir
   if not posix.access(self.cachedir) then
@@ -197,6 +210,8 @@ end
 -- _FORCE_CATALOG_REPARSE=true.
 -- @return true on success, false on failure
 function api:init_catalog()
+  self:log("init_catalog()")
+
   self.catalog = {}
   local do_reparse = false
   local function exit_cleanup()
@@ -218,12 +233,16 @@ function api:init_catalog()
       return exit_cleanup()
     end
   end
-  if do_reparse or self._FORCE_CATALOG_REPARSE then self:log("init_catalog: Parsing catalog")
+  if do_reparse or self._FORCE_CATALOG_REPARSE then
+    self:log("init_catalog: Parsing catalog")
     self:parse_csv_catalog()
-  else self:log("init_catalog: Loading cached data")
+  else
+    self:log("Loading cached catalog data")
     self.catalog = read_table(self.catalog_data)
     self.catalog_index = read_table(self.catalog_index_data)
     self.catalog_hash_table = read_table(self.catalog_hash_data)
+    self:log("Finished loading catalog data")
+
     if not self.catalog then
       error("FATAL: init_catalog: catalog cache file is not a valid table: " .. self.catalog_data)
     end
@@ -574,8 +593,7 @@ Airtime       %s ~ %s
 Rating
   Permanent   ]]..c_perm..[[%.2f%{reset} (%d)
   Temporary   ]]..c_temp..[[%.2f%{reset} (%d)
-  Review      ]]..c_review..[[%.2f%{reset} (%d)
-Similar anime]],
+  Review      ]]..c_review..[[%.2f%{reset} (%d)]],
   self:pretty_find_nonempty_title(info._DATA.titles, lang), info._DATA.aid,
   info._DATA.type,
   info._DATA.episodecount,
@@ -586,21 +604,11 @@ Similar anime]],
 
   -- Display similar anime
 
-  local sa = {}
-  local sa_max_percentage = 0
-  for title,v in pairs(info._DATA.similaranime) do
-    local p = v.approval_rate * 100
-    table.insert(sa, { t = title, approval_percentage = p, data = v })
-    if p > sa_max_percentage then
-      sa_max_percentage = p
-    end
-  end
-  table.sort(sa, function (a, b) return a.data.approval_rate > b.data.approval_rate end)
-  for _,v in ipairs(sa) do
-    print(self:pretty_sprint("  "..self:pretty_colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
-  end
+  print([[Similar Anime]])
+  self:pretty_similar_anime(info._DATA.similaranime)
 
-  -- Picture URL
+  -- AniDB URLs
+
   print(self:pretty_sprint([[
 AniDB.net
   URL          %s
@@ -608,10 +616,12 @@ AniDB.net
   info._DATA.url,
   info._DATA.image))
 
+  -- Description
+
   print([[Description]])
   print(string.format("  %s", self:pretty_reflow_text(info._DATA.description)))
 
-  -- Display episodes
+  -- Episode list
 
   print([[Episodes]])
   self:pretty_episodes(info._DATA.episodes)
@@ -657,6 +667,9 @@ function api:pretty_sprint(s, ...)
 end
 
 function api:pretty_reflow_text(s, width)
+  if not s then
+    return ""
+  end
   local s = s:gsub("\n", " ")
   local width = width or os.getenv("COLUMNS") or 72
   local i = 1
@@ -711,11 +724,29 @@ function api:pretty_episodes(episode_table)
   end
 end
 
+function api:pretty_similar_anime(t)
+  local sa = {}
+  local sa_max_percentage = 0
+  for title,v in pairs(t) do
+    local p = v.approval_rate * 100
+    table.insert(sa, { t = title, approval_percentage = p, data = v })
+    if p > sa_max_percentage then
+      sa_max_percentage = p
+    end
+  end
+  table.sort(sa, function (a, b) return a.data.approval_rate > b.data.approval_rate end)
+  for _,v in ipairs(sa) do
+    print(self:pretty_sprint("  "..self:pretty_colorcode_percentage(v.approval_percentage).."%.1f%{reset} %s (%{blue}%d%{reset})", v.approval_percentage, v.t, v.data.aid))
+  end
+end
+
 function api:property(info, name)
   if info._DATA[name] then
     return info._DATA[name]
   end
   return nil
 end
+
+
 
 return api
