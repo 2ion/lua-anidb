@@ -19,8 +19,9 @@ pkgver() {
 }
 
 package() {
+  local _lua_version=$(lua -e 'print(_VERSION)' | cut -d' ' -f2)
   cd "$srcdir/${pkgname%-git}"
-  install -m755 -d "$pkgdir"/usr/share/lua/5.2/anidb/api
-  install -Tm755 api/http.lua "$pkgdir"/usr/share/lua/5.2/anidb/api/http.lua
+  install -m755 -d "$pkgdir"/usr/share/lua/${_lua_version}/anidb/api
+  install -Tm755 api/http.lua "$pkgdir"/usr/share/lua/${_lua_version}/anidb/api/http.lua
   install -Dm755 anic "$pkgdir"/usr/bin/anic
 }
