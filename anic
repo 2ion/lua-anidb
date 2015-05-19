@@ -85,12 +85,12 @@ Options:
   end
 end
 
+anidb._DEBUG = debug
+
 if not anidb:init() then
   printf("Failed to initialize the client library! Try running with --debug.")
   os.exit(1)
 end
-
-anidb._DEBUG = debug
 
 for _,term in ipairs(search_terms) do
   local i = true
