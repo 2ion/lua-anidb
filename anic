@@ -3,8 +3,6 @@
 local anidb = require 'api.http'
 local posix = require 'posix'
 
--- Default options
-
 local search_min_word_count = -1
 local search_fulltext_thresold = -1
 local search_fulltext_function = "startswith"
@@ -12,7 +10,6 @@ local pretty_language = "en"
 local debug = false
 local print_mode = "pretty"
 local print_property = "none"
-
 local search_terms = {}
 
 local function printf(...)
@@ -23,19 +20,18 @@ local function log(...)
   if debug then printf(...) end
 end
 
-
 for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip:", {
-  { "help",               "none",     'h' },
   { "aid",                "required", 'a' },
-  { "search",             "required", 's' },
-  { "word-count",         "required", 'W' },
-  { "results-threshold",  "required", 'T' },
-  { "search-method",      "required", 'M' },
-  { "language",           "required", 'L' },
   { "debug",              "none",     'D' },
-  { "url",                "none",     'u' },
+  { "help",               "none",     'h' },
   { "image",              "none",     'i' },
-  { "property",           "required",  'p' }}) do
+  { "language",           "required", 'L' },
+  { "property",           "required", 'p' },
+  { "results-threshold",  "required", 'T' },
+  { "search",             "required", 's' },
+  { "search-method",      "required", 'M' },
+  { "url",                "none",     'u' },
+  { "word-count",         "required", 'W' }}) do
   if o == '?' then
     printf("Invalid option or missing argument: %s", arg[opterr-1])
     return 1
