@@ -37,7 +37,6 @@ local api = setmetatable({
 }, {
   __index = api
 })
-local XMLElement = {}
 
 local function ifnot(v)
   if v then return v
@@ -111,29 +110,6 @@ local function read_table(file)
   return pretty.read(read_zipfile(file))
 end
 
-function XMLElement.new(parent, name, attr)
-  local o = { children = {}, name = name, attr = attr, parent = parent }
-  setmetatable(o, { __index = XMLElement})
-  if parent and parent.children then
-    table.insert(parent.children, o)
-  end
-  return o
-end
-
-function XMLElement:addchild(e)
-  table.insert(self.children, e)
-  return self
-end
-
-function XMLElement:settext(s)
-  self.text = s
-  return self
-end
-
-function XMLElement:parent(root)
-  return self.parent or root
-end
-
 --- Write library-internal debug messages to stdout. Does nothing unless
 -- the _DEBUG flag has been set.
 -- @param ... printf-style format string and optionally arguments
@@ -177,7 +153,7 @@ end
 -- variables accordingly. Called by api:init(), do not call directly.
 -- @param cachedir The cache directory/data prefix
 function api:init_home(cachedir)
-  self:log("init_home")
+  self:log("init_home()")
   assert(cachedir)
   self.cachedir = cachedir
   if not posix.access(self.cachedir) then
@@ -255,10 +231,12 @@ end
 -- example, anime information) will be written to disk for later fast
 -- access).
 function api:exit()
+  self:log("exit()")
   local function setfree(ref, file)
     if ref then
+      self:log("dump_table() > %s", file)
       dump_table(ref, file)
-    ref = nil
+      ref = nil
     end
   end
   self.catalog = nil
