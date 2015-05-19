@@ -10,8 +10,16 @@ depends=('lua' 'lua-posix-git' 'lua-penlight' 'lua-socket' 'lua-zlib' 'lua-ansic
 makedepends=('git')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
-source=('git+https://github.com/2ion/lua-anidb.git#branch=master')
-md5sums=('SKIP')
+source=(\
+  'git+https://github.com/2ion/lua-anidb.git#branch=master' \
+  'anic-global-package-path.patch')
+md5sums=(\
+  'SKIP' \
+  '585a8e697d0b41ea0de20bbfa6535ca8')
+
+prepare() {
+  patch "$srcdir/${pkgname%-git}/anic" < anic-global-package-path.patch
+}
 
 pkgver() {
   cd "$srcdir/${pkgname%-git}"
