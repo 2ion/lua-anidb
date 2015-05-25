@@ -16,22 +16,26 @@ The synposis is as follows:
 
 ```
 Usage:
-  ./anic OPTIONS
+  anic OPTIONS
 Options:
-  -h, --help               Show this message and exit
+  -h, --help               Show this message and exit.
   -a, --aid                AID. Search for an anime by its anime ID
   -s, --search             TERM. Search in anime titles for TERM, and
-                           print the result
+                           print the result.
+  -p, --property           PROP. Print only the value of property PROP
+                           for the search results. Valid values for PROP
+                           are: type, aid, startdate, enddate, image,
+                           url, description.
   -W, --word-count         INT. Modifies --search. Require at least INT
-                           sequential words in TERM to match
+                           sequential words in TERM to match.
   -T, --results-threshold  INT. If we do not find at least INT matches
                            using a token-based title search, commence an
-                           expensive full text search
+                           expensive full text search.
   -M, --search-method      EXPR, where EXPR is one of 'startswith', 'endwith'
-                           or 'count'. Method used for the full-text search
+                           or 'count'. Method used for the full-text search.
   -L, --language           EXPR, where EXPR is an ISO language code ('ja', 'en').
-                           Specifies the language titles are displayed in
-  -D, --debug              Print client library log messages
+                           Specifies the language titles are displayed in.
+  -D, --debug              Print client library log messages.
 ```
 
 Some usage examples -- be sure to understand them!
@@ -91,7 +95,8 @@ server is quite slow, most of this time is spent waiting for data.
 
 #### Dependencies
 
-* Lua 5.2
+* Lua 5.1, 5.2 or 5.3
+* lua-expat (optional dependency for lua-penlight: Faster XML parser)
 * lua-penlight (>= 1.3.1)
 * lua-posix
 * lua-socket

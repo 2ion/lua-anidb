@@ -24,13 +24,11 @@ for o, optarg, opterr in posix.getopt(arg, "a:hs:W:T:M:L:Duip:", {
   { "aid",                "required", 'a' },
   { "debug",              "none",     'D' },
   { "help",               "none",     'h' },
-  { "image",              "none",     'i' },
   { "language",           "required", 'L' },
   { "property",           "required", 'p' },
   { "results-threshold",  "required", 'T' },
   { "search",             "required", 's' },
   { "search-method",      "required", 'M' },
-  { "url",                "none",     'u' },
   { "word-count",         "required", 'W' }}) do
   if o == '?' then
     printf("Invalid option or missing argument: %s", arg[opterr-1])
@@ -44,12 +42,10 @@ Options:
   -a, --aid                AID. Search for an anime by its anime ID
   -s, --search             TERM. Search in anime titles for TERM, and
                            print the result.
-  -u, --url                Instead of anime information, print the URL
-                           of its AniDB page.
-  -i, --image              Instead of anime information, print the URL
-                           to its AniDB cover image.
-  -p, --pretty             Pretty-print a lot of useful information on
-                           anime. This is the default.
+  -p, --property           PROP. Print only the value of property PROP
+                           for the search results. Valid values for PROP
+                           are: type, aid, startdate, enddate, image,
+                           url, description.
   -W, --word-count         INT. Modifies --search. Require at least INT
                            sequential words in TERM to match.
   -T, --results-threshold  INT. If we do not find at least INT matches
@@ -75,10 +71,6 @@ Options:
     pretty_language = optarg
   elseif o == 'D' then
     debug = true
-  elseif o == 'u' then
-    print_mode = "url"
-  elseif o == 'i' then
-    print_mode = "image"
   elseif o == 'p' then
     print_mode = "property"
     print_property = optarg
