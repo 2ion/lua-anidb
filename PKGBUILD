@@ -7,6 +7,8 @@ arch=('any')
 url="https://github.com/2ion/lua-anidb"
 license=('GPL3')
 depends=('lua' 'lua-posix-git' 'lua-penlight' 'lua-socket' 'lua-zlib' 'lua-ansicolors')
+optdepends=(\
+  'lua-expat: Recommended, faster XML parser; utilized automatically by lua-penlight')
 makedepends=('git')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
